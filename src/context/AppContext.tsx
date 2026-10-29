@@ -36,6 +36,7 @@ import {
   saveCloudDocument,
 } from "../services/cloudDatabaseService";
 import { supabase, accountAction } from "../services/supabaseClient";
+import { authErrorMessage } from "../services/supabaseConfig";
 import {
   dataRequest,
   flushDataRequests,
@@ -404,10 +405,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         email: payload.emailOrName.trim().toLowerCase(),
         password: payload.password,
       });
-      if (error)
-        throw new Error(
-          "Email hoặc mật khẩu không đúng, hoặc tài khoản đã bị khóa.",
-        );
+      if (error) throw new Error(authErrorMessage(error));
       const { user } = await accountAction("me");
       if (user.status !== "active") {
         await supabase.auth.signOut({ scope: "local" });

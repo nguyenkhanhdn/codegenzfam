@@ -1,10 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import { resolveSupabaseConfig } from "./supabaseConfig";
 // Only the publishable key belongs in the browser. Admin credentials stay in Edge Functions.
 const env = (import.meta as any).env || {};
+const config = resolveSupabaseConfig(env);
 export const supabase = createClient(
-  env.VITE_SUPABASE_URL || "https://tqnzlwkakeocxufznjfi.supabase.co",
-  env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    "sb_publishable_Qk8-pIaX0Pg2zCkv-9Uf7g_FVvEKXzR",
+  config.url,
+  config.key,
   {
     auth: {
       persistSession: true,
@@ -35,21 +36,23 @@ export async function accountAction(
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Vui lòng đăng nhập.");
   const response = await fetch(
-    `${env.VITE_SUPABASE_URL || "https://tqnzlwkakeocxufznjfi.supabase.co"}/functions/v1/account-admin`,
+    `${config.url}/functions/v1/account-admin`,
     {
       method: "POST",
       headers: {
         Authorization: `Bearer ${session.session.access_token}`,
-        apikey:
-          env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-          "sb_publishable_Qk8-pIaX0Pg2zCkv-9Uf7g_FVvEKXzR",
+        apikey: config.key,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ action, ...input }),
       signal: AbortSignal.timeout(30000),
     },
   );
-  const data = await response.json();
+  if (response.status === 404)
+    throw new Error("Dịch vụ tài khoản Supabase chưa được triển khai. Vui lòng liên hệ quản trị viên.");
+  let data;
+  try { data = await response.json(); }
+  catch { throw new Error("Dịch vụ tài khoản Supabase trả về phản hồi không hợp lệ. Vui lòng thử lại sau."); }
   if (!response.ok || data.error)
     throw new Error(data.error || "Không thể quản lý tài khoản.");
   return data;

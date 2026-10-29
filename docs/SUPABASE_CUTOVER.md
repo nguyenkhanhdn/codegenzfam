@@ -10,6 +10,8 @@ Target: `supabase-codegenzfam` (`tqnzlwkakeocxufznjfi`). Existing empty legacy t
 - Source Firestore export returned HTTP 403. No real source data has been copied, no source records were deleted, and no demo accounts are treated as real registrations.
 - Current source for the migration function includes paginated verification; deploy this version before running a real import.
 - Keep this change on a feature branch until source access, import verification, administrator access, and deployed function tests pass.
+- On 2026-10-29, the owner supplied the project URL and public anon key. These were configured in Vercel for production/development (configuration only, no cutover). The browser client and account endpoint share the same resolved configuration and support either `VITE_SUPABASE_PUBLISHABLE_KEY` or `VITE_SUPABASE_ANON_KEY`.
+- A new `account-admin` deployment with platform JWT verification enabled was rejected by automatic approval review again: explicit approval of the privileged production deployment is required. Do not work around this block.
 
 ## Architecture and guarantees
 
@@ -56,4 +58,8 @@ Browser-only registrations were never guaranteed to reach Firestore in the old a
 
 ## Recovering browser-only registrations
 
-The migration login screen can export the original application record caches from the same browser origin. It never treats a cached profile as authenticated, omits passwords and unrelated session storage, and refuses malformed/empty backups. Bring this snapshot into the controlled import workflow; accounts without migrated credentials need an authorized password reset. The small legacy-site recovery patch is tracked separately in PR #3; until that PR is merged/deployed, its button is not available on the production website. A lookup in Supabase does not establish whether an unsynchronized account exists on another device.
+The migration login screen can export the original application record caches from the same browser origin. It never treats a cached profile as authenticated, omits passwords and unrelated session storage, and refuses malformed/empty backups. Bring this snapshot into the controlled import workflow; accounts without migrated credentials need an authorized password reset. The small legacy-site recovery patch is tracked separately in PR #3; PR #3 is now merged and deployed, so its recovery export button is available on the production website. A lookup in Supabase does not establish whether an unsynchronized account exists on another device.
+
+## Current authentication diagnostics
+
+The login form preserves the actual Auth/Edge failure instead of replacing it whenever an email is found in browser storage. Email confirmation, disabled users, rate limits, unavailable Auth, and a missing account-admin deployment have separate messages. A cached legacy profile is never a Supabase session. No account is silently recreated, promoted to admin, or assigned a known password. The first real administrator must be provisioned through an authorized server-side process after identity/email verification.

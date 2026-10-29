@@ -1,4 +1,4 @@
-import { buildLegacyBackup, hasLegacyAccount } from '../../services/legacyAccountRecovery';
+import { buildLegacyBackup } from '../../services/legacyAccountRecovery';
 import { downloadFile } from '../../services/dataStorageService';
 import React, { useState } from "react";
 import {
@@ -84,7 +84,7 @@ export const AuthModal: React.FC = () => {
 
     setIsLoading(false);
     if (!res.success) {
-      setErrorMsg(hasLegacyAccount(localStorage, loginEmail) ? "Email này còn trong dữ liệu cũ của trình duyệt. Hãy xuất bản sao lưu để đối soát và chuyển tài khoản; không thể xác thực bằng dữ liệu cục bộ." : (res.error || "Đăng nhập không thành công."));
+      setErrorMsg(res.error || "Đăng nhập không thành công.");
     }
   };
 
