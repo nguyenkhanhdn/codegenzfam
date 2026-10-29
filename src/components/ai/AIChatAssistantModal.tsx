@@ -81,12 +81,12 @@ export const AIChatAssistantModal: React.FC<AIChatAssistantModalProps> = ({
       });
 
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
-    } catch {
+    } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Hệ thống đang bận một chút. Bạn hãy thử lại sau ít phút nhé!',
+          content: error instanceof Error && error.name !== 'TimeoutError' ? error.message : 'Kết nối AI bị gián đoạn. Vui lòng thử lại.',
         },
       ]);
     } finally {
@@ -107,7 +107,7 @@ export const AIChatAssistantModal: React.FC<AIChatAssistantModalProps> = ({
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-extrabold tracking-tight">Trợ Lý AI CODE GenZ</h2>
                 <span className="text-[9px] font-extrabold uppercase tracking-wider bg-amber-400 text-slate-900 px-2 py-0.5 rounded-full shadow-xs">
-                  Gemini 3.7 Flash
+                  Gemini AI
                 </span>
               </div>
               <p className="text-xs text-indigo-100 mt-0.5">

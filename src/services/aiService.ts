@@ -17,25 +17,20 @@ export const aiService = {
     context?: string;
     history?: AIChatMessage[];
   }): Promise<string> {
-    try {
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      if (!response.ok) {
-        throw new Error('Lỗi kết nối máy chủ AI');
-      }
-      const data = await response.json();
-      return data.reply || 'Cảm ơn bạn đã chia sẻ. Mình luôn đồng hành cùng bạn.';
-    } catch (error) {
-      console.warn('AI fallback triggered:', error);
-      if (params.role === 'student') {
-        return 'Mình hiểu bạn đang trải qua những cảm xúc này. Để bắt đầu nói chuyện với bố mẹ, bạn hãy chọn một thời điểm cả nhà thảnh thơi và mở đầu bằng: "Bố mẹ ơi, con muốn tâm sự một chút về chuyện trường lớp..." nhé!';
-      } else {
-        return 'Cha mẹ hãy kiên nhẫn lắng nghe con bằng 100% sự chú ý, ghi nhận cảm xúc của con trước khi đưa ra giải pháp nhé!';
-      }
+    const response = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+      signal: AbortSignal.timeout(60000),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(data?.error || 'Không thể kết nối trợ lý AI. Vui lòng thử lại.');
     }
+    if (typeof data?.reply !== 'string' || !data.reply.trim()) {
+      throw new Error('Trợ lý AI chưa trả lời. Vui lòng thử lại.');
+    }
+    return data.reply;
   },
 
   async getParentCoaching(params: {
