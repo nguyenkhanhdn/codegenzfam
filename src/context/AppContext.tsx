@@ -521,7 +521,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!matchedUser) {
       return {
         success: false,
-        error: 'Không tìm thấy tài khoản với thông tin này. Vui lòng kiểm tra lại hoặc Đăng ký tài khoản mới.',
+        error: 'Máy chủ đăng nhập chưa phản hồi hợp lệ và không tìm thấy tài khoản trong bộ nhớ trình duyệt này. Chưa thể xác minh tài khoản; vui lòng liên hệ quản trị viên.',
       };
     }
 
@@ -532,10 +532,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    if (password && matchedUser.password && matchedUser.password !== password) {
+    if (!password || !matchedUser.password || matchedUser.password !== password) {
       return {
         success: false,
-        error: 'Mật khẩu không chính xác. Mật khẩu mặc định là: password123',
+        error: 'Máy chủ đăng nhập chưa phản hồi hợp lệ. Thông tin lưu trong trình duyệt không xác minh được mật khẩu này; chưa thể kết luận mật khẩu trên máy chủ không chính xác. Vui lòng liên hệ quản trị viên để khôi phục kết nối đăng nhập.',
       };
     }
 

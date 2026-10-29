@@ -1,4 +1,4 @@
-import { buildLegacyBackup, hasLegacyAccount } from '../../services/legacyAccountRecovery';
+import { buildLegacyBackup } from '../../services/legacyAccountRecovery';
 import { downloadFile } from '../../services/dataStorageService';
 import React, { useState } from 'react';
 import {
@@ -81,7 +81,7 @@ export const AuthModal: React.FC = () => {
 
     setIsLoading(false);
     if (!res.success) {
-      setErrorMsg(hasLegacyAccount(localStorage, loginEmail) ? 'Email này có trong dữ liệu cũ của trình duyệt. Hệ thống chưa xác nhận được đăng nhập; hãy xuất bản sao lưu bên dưới để đối soát và chuyển tài khoản sang Supabase.' : (res.error || 'Đăng nhập không thành công.'));
+      setErrorMsg(res.error || 'Đăng nhập không thành công.');
     }
   };
 
