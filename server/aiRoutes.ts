@@ -1,26 +1,57 @@
 import type { Express } from "express";
 import { GoogleGenAI } from "@google/genai";
 
-function getGeminiClient(): GoogleGenAI | null {
+type GenerationParams = {
+  model: string;
+  contents: string;
+  config?: { systemInstruction?: string; temperature?: number; responseMimeType?: string };
+};
+
+function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) {
-    console.warn("GEMINI_API_KEY is not set. AI endpoints are unavailable.");
-    return null;
+  if (apiKey) {
+    const client = new GoogleGenAI({ apiKey, httpOptions: { timeout: 45000 } });
+    return { generate: async (params: GenerationParams) => client.models.generateContent(params) };
   }
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        "User-Agent": "aistudio-build",
-      },
+  // Resolve per request: Vercel rotates OIDC credentials automatically.
+  const token = process.env.AI_GATEWAY_API_KEY?.trim() || process.env.VERCEL_OIDC_TOKEN;
+  if (!token) return null;
+  return {
+    async generate(params: GenerationParams): Promise<{ text: string }> {
+      const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(45000),
+        body: JSON.stringify({
+          model: process.env.AI_GATEWAY_MODEL?.trim() || 'google/gemini-3.8-flash',
+          messages: [
+            ...(params.config?.systemInstruction ? [{ role: 'system', content: params.config.systemInstruction }] : []),
+            { role: 'user', content: params.contents },
+          ],
+          max_tokens: 2500,
+          ...(params.config?.temperature !== undefined ? { temperature: params.config.temperature } : {}),
+          ...(params.config?.responseMimeType === 'application/json' ? { response_format: { type: 'json_object' } } : {}),
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        // Never log raw provider payloads or authorization credentials.
+        throw Object.assign(new Error('AI Gateway request failed'), { status: response.status, code: data?.error?.code });
+      }
+      const text = data?.choices?.[0]?.message?.content;
+      if (typeof text !== 'string' || !text.trim()) throw new Error('Empty AI Gateway response');
+      return { text };
     },
-  });
+  };
 }
 
 export function registerAiRoutes(app: Express) {
   // Reports configuration only; never exposes credentials or claims provider readiness.
   app.get("/api/ai/status", (_req, res) => {
-    res.json({ configured: Boolean(process.env.GEMINI_API_KEY?.trim()) });
+    res.json({
+      configured: Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.AI_GATEWAY_API_KEY?.trim() || process.env.VERCEL_OIDC_TOKEN),
+      provider: process.env.GEMINI_API_KEY?.trim() ? 'gemini' : 'vercel-ai-gateway',
+    });
   });
 
   // AI Chat Assistant endpoint
@@ -59,7 +90,7 @@ Tin nhắn từ người dùng (${role === "parent" ? "Cha Mẹ" : "Học sinh"}
 
 Hãy đưa ra câu trả lời thấu cảm, thực tế và mang lại lời khuyên hoặc gợi ý câu nói trực tiếp để người dùng có thể áp dụng ngay.`;
 
-      const response = await ai.models.generateContent({
+      const response = await ai.generate({
         model: process.env.GEMINI_MODEL?.trim() || "gemini-3.7-flash",
         contents: prompt,
         config: {
@@ -72,7 +103,7 @@ Hãy đưa ra câu trả lời thấu cảm, thực tế và mang lại lời kh
       if (!reply) throw new Error("Empty AI response");
       res.json({ reply });
     } catch (error: any) {
-      console.error("AI Chat request failed", { status: error?.status });
+      console.error("AI Chat request failed", { status: error?.status, code: error?.code });
       res.status(502).json({ error: "Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên." });
     }
   });
@@ -103,7 +134,7 @@ Hãy đóng vai trò chuyên gia tâm lý gia đình CODE GenZ Family và đưa 
 }
 `;
 
-      const response = await ai.models.generateContent({
+      const response = await ai.generate({
         model: process.env.GEMINI_MODEL?.trim() || "gemini-3.7-flash",
         contents: prompt,
         config: {
@@ -135,7 +166,7 @@ Mức độ khó mở lời: ${difficulty || 'vừa phải'}.
 Hãy tạo 3 câu mở đầu (icebreakers) tự nhiên, chân thành, giúp phụ huynh không bị giật mình hay phản ứng phòng thủ, mà tạo ra bầu không khí cởi mở và ấm áp.
 Trả về JSON định dạng: { "icebreakers": ["câu 1", "câu 2", "câu 3"] }`;
 
-      const response = await ai.models.generateContent({
+      const response = await ai.generate({
         model: process.env.GEMINI_MODEL?.trim() || "gemini-3.7-flash",
         contents: prompt,
         config: {

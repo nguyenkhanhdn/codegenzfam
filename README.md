@@ -18,3 +18,7 @@ Nếu API trả lỗi: kiểm tra khóa và quyền truy cập model, quota/bill
 `vercel.json` builds the Vite frontend only. `api/ai/[action].ts` serves chat, parent-coach, icebreakers and status as a Node.js Function using shared handlers from `server/aiRoutes.ts`. This function never initializes SQLite or writes to local disk. The rest of the existing local Express/SQLite API is not deployed by this AI integration.
 
 Set `GEMINI_API_KEY` in Vercel project Environment Variables for Production and Preview, then redeploy. `GEMINI_MODEL` is optional. Test the preview with `node scripts/check-ai.mjs` and `APP_URL` before release. Protected previews require Vercel authentication.
+
+### AI Gateway authentication on Vercel
+
+When `GEMINI_API_KEY` is empty, the shared AI handler uses Vercel AI Gateway with the deployment's automatically rotated `VERCEL_OIDC_TOKEN` (or `AI_GATEWAY_API_KEY` outside Vercel). It defaults to `google/gemini-3.8-flash`; override with `AI_GATEWAY_MODEL`. Requests consume the team's AI Gateway credits. Account verification or credit setup may still be required in Vercel. Never copy an OIDC token into source or a permanent environment variable. A nonempty Gemini key keeps direct Gemini as the preferred provider.

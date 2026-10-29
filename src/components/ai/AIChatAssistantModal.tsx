@@ -107,7 +107,7 @@ export const AIChatAssistantModal: React.FC<AIChatAssistantModalProps> = ({
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-extrabold tracking-tight">Trợ Lý AI CODE GenZ</h2>
                 <span className="text-[9px] font-extrabold uppercase tracking-wider bg-amber-400 text-slate-900 px-2 py-0.5 rounded-full shadow-xs">
-                  Gemini 3.7 Flash
+                  Gemini AI
                 </span>
               </div>
               <p className="text-xs text-indigo-100 mt-0.5">
