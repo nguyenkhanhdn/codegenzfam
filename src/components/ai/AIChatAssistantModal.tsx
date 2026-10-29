@@ -81,12 +81,12 @@ export const AIChatAssistantModal: React.FC<AIChatAssistantModalProps> = ({
       });
 
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
-    } catch {
+    } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Hệ thống đang bận một chút. Bạn hãy thử lại sau ít phút nhé!',
+          content: error instanceof Error && error.name !== 'TimeoutError' ? error.message : 'Kết nối AI bị gián đoạn. Vui lòng thử lại.',
         },
       ]);
     } finally {

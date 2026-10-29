@@ -66,9 +66,9 @@ import {
 dotenv.config();
 
 function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    console.warn("GEMINI_API_KEY is not set. Using intelligent fallback logic.");
+    console.warn("GEMINI_API_KEY is not set. AI endpoints are unavailable.");
     return null;
   }
   return new GoogleGenAI({
@@ -83,7 +83,7 @@ function getGeminiClient(): GoogleGenAI | null {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json({ limit: "50mb" }));
 
@@ -1194,23 +1194,22 @@ async function startServer() {
     }
   });
 
+  // Reports configuration only; never exposes credentials or claims provider readiness.
+  app.get("/api/ai/status", (_req, res) => {
+    res.json({ configured: Boolean(process.env.GEMINI_API_KEY?.trim()) });
+  });
+
   // AI Chat Assistant endpoint
   app.post("/api/ai/chat", async (req, res) => {
     try {
       const { message, role, context, history } = req.body;
+      if (typeof message !== "string" || !message.trim() || message.length > 10000 || !["student", "parent"].includes(role)) {
+        return res.status(400).json({ error: "Vui lòng nhập tin nhắn hợp lệ (tối đa 10.000 ký tự)." });
+      }
       const ai = getGeminiClient();
 
       if (!ai) {
-        // Fallback intelligent responses if API key is not provided yet
-        let mockReply = "";
-        if (role === "student") {
-          mockReply = `Chào bạn, mình lắng nghe bạn đây. Khi gặp áp lực học tập hoặc muốn mở lời với bố mẹ, bạn hãy thử bắt đầu bằng việc chia sẻ cảm xúc chân thật nhất của mình trước nhé. Ví dụ: "Bố mẹ ơi, hôm nay con hơi mệt và có chuyện này con rất muốn được bố mẹ lắng nghe mà không vội trách con ạ..."`;
-        } else if (role === "parent") {
-          mockReply = `Chào cha mẹ, khi con đang có cảm xúc tiêu cực hoặc khép kín, bước đầu tiên quan trọng nhất là "lắng nghe chủ động" và xác thực cảm xúc của con thay vì vội đưa ra lời khuyên hay so sánh. Cha mẹ có thể nói: "Mẹ thấy hôm nay con có vẻ có nhiều điều trăn trở, mẹ luôn ở đây và sẵn sàng lắng nghe con bất cứ khi nào con thấy thoải mái nhé."`;
-        } else {
-          mockReply = `CODE AI luôn sẵn sàng đồng hành cùng gia đình để xây dựng cầu nối thấu cảm và yêu thương. Bạn cần hỗ trợ gì thêm không?`;
-        }
-        return res.json({ reply: mockReply });
+        return res.status(503).json({ code: "AI_NOT_CONFIGURED", error: "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ quản trị viên để kích hoạt." });
       }
 
       const systemInstruction = role === "parent"
@@ -1237,7 +1236,7 @@ Tin nhắn từ người dùng (${role === "parent" ? "Cha Mẹ" : "Học sinh"}
 Hãy đưa ra câu trả lời thấu cảm, thực tế và mang lại lời khuyên hoặc gợi ý câu nói trực tiếp để người dùng có thể áp dụng ngay.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.7-flash",
+        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.7-flash",
         contents: prompt,
         config: {
           systemInstruction,
@@ -1245,11 +1244,12 @@ Hãy đưa ra câu trả lời thấu cảm, thực tế và mang lại lời kh
         },
       });
 
-      const reply = response.text || "Mình luôn ở đây lắng nghe bạn. Hãy chia sẻ thêm nhé!";
+      const reply = response.text?.trim();
+      if (!reply) throw new Error("Empty AI response");
       res.json({ reply });
     } catch (error: any) {
-      console.error("AI Chat error:", error);
-      res.status(500).json({ error: error.message || "Lỗi xử lý AI" });
+      console.error("AI Chat request failed", { status: error?.status });
+      res.status(502).json({ error: "Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên." });
     }
   });
 
@@ -1260,20 +1260,7 @@ Hãy đưa ra câu trả lời thấu cảm, thực tế và mang lại lời kh
       const ai = getGeminiClient();
 
       if (!ai) {
-        return res.json({
-          empathyAnalysis: `Con đang cảm thấy ${emotion} (mức độ ${intensity}/10). Nguyên nhân chính từ việc: "${reason || 'Chưa nêu'}". Điều con khao khát nhất lúc này là: "${wishToUnderstand || 'Được bố mẹ lắng nghe và thấu hiểu'}".`,
-          suggestedMessages: [
-            `"Mẹ thấy hôm nay con có nhiều trăn trở. Mẹ luôn ở đây và tin tưởng con, khi nào con muốn chia sẻ thì nói với mẹ nhé."`,
-            `"Bố mẹ hiểu là việc này không hề dễ dàng với con. Cảm ơn con đã dũng cảm chia sẻ điều này."`,
-            `"Mẹ rất muốn nghe con kể thêm, không phải để phán xét mà là để mẹ hiểu và đồng hành cùng con tốt hơn."`
-          ],
-          thingsToAvoid: [
-            "Tránh nói: 'Có thế mà cũng áp lực', 'Hồi xưa bố mẹ còn khổ hơn nhiều'.",
-            "Tránh vội vã đưa ra giải pháp ngay khi con chưa sẵn sàng nghe.",
-            "Tránh chất vấn hay tra hỏi dồn dập."
-          ],
-          actionTip: "Hãy pha cho con một cốc nước ấm, ngồi cạnh con một cách nhẹ nhàng hoặc gửi một tin nhắn ngắn chứa đựng sự tin tưởng."
-        });
+        return res.status(503).json({ code: "AI_NOT_CONFIGURED", error: "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ quản trị viên để kích hoạt." });
       }
 
       const prompt = `
@@ -1293,7 +1280,7 @@ Hãy đóng vai trò chuyên gia tâm lý gia đình CODE GenZ Family và đưa 
 `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.7-flash",
+        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.7-flash",
         contents: prompt,
         config: {
           systemInstruction: "Bạn là chuyên gia tư vấn tâm lý học hành vi gia đình Việt Nam. Luôn xuất ra JSON hợp lệ.",
@@ -1304,8 +1291,8 @@ Hãy đóng vai trò chuyên gia tâm lý gia đình CODE GenZ Family và đưa 
       const parsed = JSON.parse(response.text || "{}");
       res.json(parsed);
     } catch (error: any) {
-      console.error("Parent coach error:", error);
-      res.status(500).json({ error: error.message || "Lỗi xử lý phân tích" });
+      console.error("Parent coach request failed", { status: error?.status });
+      res.status(502).json({ error: "Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên." });
     }
   });
 
@@ -1316,13 +1303,7 @@ Hãy đóng vai trò chuyên gia tâm lý gia đình CODE GenZ Family và đưa 
       const ai = getGeminiClient();
 
       if (!ai) {
-        return res.json({
-          icebreakers: [
-            `"Bố/Mẹ ơi, dạo này con đang có chuyện này hơi băn khoăn về ${topic || 'việc học'}, tối nay bố/mẹ có rảnh 10 phút để nghe con tâm sự không ạ?"`,
-            `"Con biết bố mẹ luôn mong điều tốt nhất cho con. Con đang gặp chút áp lực về ${topic || 'định hướng'}, con muốn xin lời khuyên nhẹ nhàng từ bố mẹ ạ."`,
-            `"Hôm nay con có làm một bài kiểm tra nhỏ trên app CODE GenZ Family, con muốn đọc cho bố mẹ nghe thử một câu hỏi rất hay này..."`
-          ]
-        });
+        return res.status(503).json({ code: "AI_NOT_CONFIGURED", error: "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ quản trị viên để kích hoạt." });
       }
 
       const prompt = `Học sinh THPT muốn nói chuyện với bố mẹ về chủ đề: "${topic || 'áp lực học tập và chọn ngành'}".
@@ -1331,7 +1312,7 @@ Hãy tạo 3 câu mở đầu (icebreakers) tự nhiên, chân thành, giúp ph�
 Trả về JSON định dạng: { "icebreakers": ["câu 1", "câu 2", "câu 3"] }`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.7-flash",
+        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.7-flash",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -1341,8 +1322,8 @@ Trả về JSON định dạng: { "icebreakers": ["câu 1", "câu 2", "câu 3"] 
       const parsed = JSON.parse(response.text || "{}");
       res.json(parsed);
     } catch (error: any) {
-      console.error("Icebreaker error:", error);
-      res.status(500).json({ error: error.message || "Lỗi tạo câu mở đầu" });
+      console.error("Icebreaker request failed", { status: error?.status });
+      res.status(502).json({ error: "Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên." });
     }
   });
 
