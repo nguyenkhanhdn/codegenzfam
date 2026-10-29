@@ -15,7 +15,7 @@ export function resolveSupabaseConfig(env: SupabaseEnvironment) {
 export function authErrorMessage(error: { code?: string; status?: number }) {
   switch (error.code) {
     case "email_not_confirmed":
-      return "Vui lòng xác minh email đăng ký trước khi đăng nhập.";
+      return "Tài khoản chưa được quản trị viên phê duyệt. Vui lòng liên hệ quản trị viên.";
     case "user_banned":
       return "Tài khoản đang bị khóa. Vui lòng liên hệ quản trị viên.";
     case "invalid_credentials":

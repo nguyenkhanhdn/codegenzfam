@@ -136,6 +136,10 @@ export const AuthModal: React.FC = () => {
     setIsLoading(false);
     if (!res.success) {
       setErrorMsg(res.error || "Đăng ký không thành công.");
+    } else if (res.message) {
+      setSuccessMsg(res.message);
+      setRegPassword("");
+      setRegConfirmPassword("");
     }
   };
 

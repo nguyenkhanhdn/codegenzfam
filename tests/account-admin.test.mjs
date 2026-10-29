@@ -297,3 +297,13 @@ await test("profile updates ignore credentials and identity fields", async () =>
   assert.equal(profiles.get("target").data.name, "Updated");
   assert.equal(profiles.get("target").data.password, undefined);
 });
+
+await test("admin approval confirms Auth email, activates the account and records the approver",async()=>{
+ profiles.get("member").data.status="pending";
+ const result=await invoke("admin",{action:"status",id:"legacy-member",status:"active"});
+ assert.equal(result.status,200);
+ assert.equal(credentials.get("member").email_confirm,true);
+ assert.equal(profiles.get("member").data.status,"active");
+ assert.equal(profiles.get("member").data.approvedBy,"legacy-admin");
+ assert.ok(profiles.get("member").data.approvedAt);
+});

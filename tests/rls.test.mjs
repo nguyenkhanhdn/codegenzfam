@@ -37,6 +37,7 @@ await db.exec(
 );
 await db.exec("create table public.users(id text primary key,email text)");
 await db.exec(await readFile(new URL("../supabase/schema/legacy-bindings.sql",import.meta.url),"utf8"));
+await db.exec(await readFile(new URL("../supabase/schema/account-approval.sql",import.meta.url),"utf8"));
 for (const [n, role, family] of [
   [1, "admin", ""],
   [2, "student", "fam-a"],
@@ -264,6 +265,7 @@ await test("self-registered metadata cannot create an administrator", async () =
     [uid(7)],
   );
   assert.equal(r.rows[0].data.role, "student");
+  assert.equal(r.rows[0].data.status, "pending");
   assert.deepEqual(r.rows[0].data.permissions, {});
 });
 await test("service-only binding repairs delayed Auth metadata without changing the account",async()=>{

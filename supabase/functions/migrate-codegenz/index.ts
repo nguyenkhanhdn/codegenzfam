@@ -1,3 +1,4 @@
+import { confirmSystemAdministrators } from "./approval-rollout.ts";
 import { migrateLegacyUsers } from "./legacy-users.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 const db = createClient(
@@ -36,6 +37,13 @@ Deno.serve(async (req: Request) => {
         { status: 401 },
       );
     const body = await req.json();
+    if (run.manifest?.scope === "admin-approval-rollout") {
+      if(body.action !== "confirm-system-administrators")
+        return Response.json({error:"Grant scope mismatch"},{status:403});
+      const result = await confirmSystemAdministrators(db);
+      check(await db.from("codegenz_migration_runs").update({completed:true,manifest:{...run.manifest,...result}}).eq("id",run.id));
+      return Response.json(result,{headers:{"Cache-Control":"no-store"}});
+    }
     if (run.manifest?.source === "public.users") {
       if (body.action === "legacy-users") {
         const result = await migrateLegacyUsers(db, body);
