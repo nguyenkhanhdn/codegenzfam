@@ -25,7 +25,7 @@ Deletion disables and soft-deletes the Auth identity and hides its profile from 
 
 1. Keep the existing website live while preparing and validating a source export. Do not replace it with an empty Supabase dataset.
 2. Review and apply `supabase/schema/document-guards.sql` after the accounts migration. The local Supabase CLI crashes with SIGTRAP in this workspace; the applied migration filename was copied from the actual remote history, not invented.
-3. Deploy the reviewed `account-admin` and latest `migrate-codegenz` functions from `supabase/functions`. Both authenticate inside their handlers. `SUPABASE_SERVICE_ROLE_KEY` stays inside Supabase Edge Functions; never add it to Vite or browser variables.
+3. Deploy the reviewed `account-admin` and latest `migrate-codegenz` functions from `supabase/functions`. The account-admin endpoint must keep platform JWT verification enabled in addition to its handler checks; the migration endpoint uses its own short-lived migration grant. `SUPABASE_SERVICE_ROLE_KEY` stays inside Supabase Edge Functions; never add it to Vite or browser variables.
 4. Configure Auth site URL and allowed redirect URLs to the production domain and intended previews. Enable email/password login, configure confirmation/recovery email delivery, and set the Auth password minimum to at least 10 characters.
 5. Configure the two public `VITE_SUPABASE_*` values from `.env.example` in Vercel. They are safe publishable configuration, not admin credentials.
 6. Complete the import and record verification below. Ensure at least one real, authorized active administrator can sign in and complete the required password change. Do not bootstrap an admin by allowing public signup to choose `admin`.
@@ -53,3 +53,7 @@ Browser-only registrations were never guaranteed to reach Firestore in the old a
 `npm test` exercises the actual SQL schema and pending write guards in local PostgreSQL/WASM, plus the Edge handler with an Auth/database test adapter. It covers anonymous/non-admin denial, role escalation, private data isolation, ownership, account bans, forced password changes, session revocation, stale updates and last-admin protection. These are not a claim of a production end-to-end test: the privileged function and final guards remain blocked from deployment.
 
 `npm run lint` and `npm run build` verify the frontend and local server. Browser application records are not restored from legacy caches; no default-password or account-switch bypass remains. The old local SQLite server and Firebase runtime are removed from the new path. Backups export only data permitted by RLS; restoring all Auth accounts from the browser is intentionally disallowed.
+
+## Recovering browser-only registrations
+
+The migration login screen can export the original application record caches from the same browser origin. It never treats a cached profile as authenticated, omits passwords and unrelated session storage, and refuses malformed/empty backups. Bring this snapshot into the controlled import workflow; accounts without migrated credentials need an authorized password reset. The small legacy-site recovery patch is tracked separately in PR #3; until that PR is merged/deployed, its button is not available on the production website. A lookup in Supabase does not establish whether an unsynchronized account exists on another device.

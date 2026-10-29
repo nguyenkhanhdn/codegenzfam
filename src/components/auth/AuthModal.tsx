@@ -1,3 +1,5 @@
+import { buildLegacyBackup, hasLegacyAccount } from '../../services/legacyAccountRecovery';
+import { downloadFile } from '../../services/dataStorageService';
 import React, { useState } from "react";
 import {
   X,
@@ -82,8 +84,16 @@ export const AuthModal: React.FC = () => {
 
     setIsLoading(false);
     if (!res.success) {
-      setErrorMsg(res.error || "Đăng nhập không thành công.");
+      setErrorMsg(hasLegacyAccount(localStorage, loginEmail) ? "Email này còn trong dữ liệu cũ của trình duyệt. Hãy xuất bản sao lưu để đối soát và chuyển tài khoản; không thể xác thực bằng dữ liệu cục bộ." : (res.error || "Đăng nhập không thành công."));
     }
+  };
+
+  const handleExportLegacy = () => {
+    try {
+      const backup = buildLegacyBackup(localStorage);
+      downloadFile('codegenz_legacy_browser_backup.json', JSON.stringify(backup, null, 2), 'application/json');
+      setSuccessMsg('Đã xuất bản sao lưu cũ của trình duyệt. Tệp không chứa mật khẩu và chưa được nhập lên Supabase.');setErrorMsg(null);
+    } catch(error) {setErrorMsg(error instanceof Error ? error.message : 'Không thể xuất dữ liệu cũ.');}
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
@@ -93,7 +103,7 @@ export const AuthModal: React.FC = () => {
       return;
     }
     if (regPassword && regPassword.length < 10) {
-      setErrorMsg("Mật khẩu tối thiểu 6 ký tự.");
+      setErrorMsg("Mật khẩu tối thiểu 10 ký tự.");
       return;
     }
     if (regPassword !== regConfirmPassword) {
@@ -295,6 +305,13 @@ export const AuthModal: React.FC = () => {
                   )}
                 </button>
               </form>
+              <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3" aria-labelledby="legacy-recovery-title">
+                <h3 id="legacy-recovery-title" className="font-semibold text-sm text-amber-950">Khôi phục tài khoản từ bản cũ</h3>
+                <p className="text-xs text-amber-900">Nếu đã đăng ký trên bản cũ, hãy dùng đúng trình duyệt đó để xuất dữ liệu cho bước đối soát và chuyển đổi.</p>
+                <button type="button" onClick={handleExportLegacy} className="rounded-lg border border-amber-400 bg-white px-4 py-2 text-sm font-semibold">Xuất dữ liệu cũ để chuyển Supabase</button>
+                {loginEmail.trim().toLowerCase().endsWith('@gmai.com') && <p role="status" className="text-xs text-amber-900">Bạn đang nhập gmai.com. Nếu dùng Gmail, hãy kiểm tra lại gmail.com; hệ thống giữ nguyên email bạn nhập.</p>}
+              </section>
+
             </div>
           ) : (
             /* ================= REGISTER TAB ================= */
