@@ -247,6 +247,7 @@ await test("reset updates Auth, requires a new password and revokes sessions wit
   assert.equal(r.status, 200);
   assert.equal(credentials.get("target").password, password);
   assert.equal(profiles.get("target").data.mustChangePassword, true);
+  assert.equal(profiles.get("target").data.passwordChangeReason, "admin-reset");
   assert.equal(sessions.has("target"), false);
   assert.ok(!JSON.stringify(r.body).includes(password));
 });
@@ -306,4 +307,9 @@ await test("admin approval confirms Auth email, activates the account and record
  assert.equal(profiles.get("member").data.status,"active");
  assert.equal(profiles.get("member").data.approvedBy,"legacy-admin");
  assert.ok(profiles.get("member").data.approvedAt);
+});
+
+await test("admin-created accounts do not require a first-login password change",async()=>{
+ const result=await invoke("admin",{action:"create",user:{name:"Synthetic account",email:"synthetic-created@example.invalid",password:"Synthetic-Strong-1234",role:"student"}});
+ assert.equal(result.status,200);assert.equal(result.body.user.mustChangePassword,false);
 });

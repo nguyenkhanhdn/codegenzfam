@@ -96,6 +96,7 @@ Deno.serve(async (req: Request) => {
               authUserId: undefined,
               version: undefined,
               mustChangePassword: false,
+              passwordChangeReason: null,
               lastPasswordChangedAt: new Date().toISOString(),
             },
           })
@@ -239,7 +240,8 @@ Deno.serve(async (req: Request) => {
               id: row.legacy_id,
               email: created.user.email,
               status: "active",
-              mustChangePassword: true,
+              mustChangePassword: false,
+              passwordChangeReason: null,
             },
           })
           .eq("auth_user_id", created.user.id)
@@ -304,6 +306,7 @@ Deno.serve(async (req: Request) => {
     } else if (action === "reset-password") {
       password(body.password);
       updated.mustChangePassword = true;
+      updated.passwordChangeReason = "admin-reset";
       updated.lastPasswordChangedAt = new Date().toISOString();
     } else if (action === "delete") {
       if (target.auth_user_id === identity.user.id)

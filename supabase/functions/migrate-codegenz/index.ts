@@ -140,7 +140,7 @@ Deno.serve(async (req: Request) => {
           await db
             .from("codegenz_profiles")
             .update({
-              data: { ...profile, id, status, mustChangePassword: true },
+              data: { ...profile, id, status, mustChangePassword: false, passwordChangeReason: null },
             })
             .eq("auth_user_id", result.user.id),
         );

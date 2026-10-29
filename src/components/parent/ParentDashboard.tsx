@@ -47,7 +47,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const sharedJournals = getFilteredJournalsForUser(currentUser);
   const currentDay = 9;
   const todayTask = challengeTasks.find((t) => t.day === currentDay) || challengeTasks[0];
-  const todayProgress = challengeProgress.find((p) => p.day === currentDay);
+  const todayProgress = challengeProgress.find((p) => p.day === todayTask?.day);
 
   // AI Parent Coach state
   const [selectedJournalForCoach, setSelectedJournalForCoach] = useState<EmotionJournalEntry | null>(
@@ -286,6 +286,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           </div>
 
           {/* Today's 30-Day Challenge for Parent */}
+          {todayTask ? (
           <div className="bg-white rounded-3xl p-6 border border-purple-100/80 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -354,6 +355,13 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               </div>
             </div>
           </div>
+          ) : (
+            <section className="rounded-3xl border border-purple-100 bg-white p-6">
+              <h3 className="font-bold text-slate-900">Thử thách 30 ngày kết nối</h3>
+              <p className="mt-2 text-sm text-slate-600">Chưa có thử thách được thiết lập.</p>
+            </section>
+          )}
+
         </div>
 
         {/* Right Column: Deep Talk & Guidance */}

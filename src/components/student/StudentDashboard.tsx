@@ -54,7 +54,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   // Active challenge is day 9 (or latest in progress)
   const currentDay = 9;
   const todayTask = challengeTasks.find((t) => t.day === currentDay) || challengeTasks[0];
-  const todayProgress = challengeProgress.find((p) => p.day === currentDay);
+  const todayProgress = challengeProgress.find((p) => p.day === todayTask?.day);
 
   // Quick Icebreaker Generator state
   const [icebreakerTopic, setIcebreakerTopic] = useState('áp lực điểm số và kỳ thi sắp tới');
@@ -265,6 +265,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
 
           {/* Today's 30-Day Challenge Card */}
+          {todayTask ? (
           <div className="bg-white rounded-3xl p-6 border border-purple-100/80 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -333,6 +334,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </div>
             </div>
           </div>
+          ) : (
+            <section className="rounded-3xl border border-purple-100 bg-white p-6">
+              <h3 className="font-bold text-slate-900">Thử thách 30 ngày kết nối</h3>
+              <p className="mt-2 text-sm text-slate-600">Chưa có thử thách được thiết lập.</p>
+            </section>
+          )}
 
           {/* AI Icebreaker Generator Widget */}
           <div className="bg-white p-6 rounded-3xl border border-purple-100/80 shadow-xs">

@@ -2,6 +2,14 @@
 
 Target: `supabase-codegenzfam` (`tqnzlwkakeocxufznjfi`). Legacy source tables are retained; the new app uses `codegenz_profiles` and `codegenz_documents`.
 
+## First-login and empty-dashboard fix (2026-10-30)
+
+The initial/migration password-change requirement is removed in the revised account-creation and import code. Existing flags were cleared with applied migration `20261029234816_codegenz_disable_initial_password_change.sql`; live verification reports 27 profiles and zero initial password-change requirements. Password values, approvals and account roles were not changed. Explicit administrator resets remain a separate policy: reset sets `passwordChangeReason=admin-reset`, and the existing gate remains for that case. Historical reset audit events are respected when clearing old flags.
+
+The post-login white screen was reproduced in both real student and parent dashboard render tests: empty Supabase challenge collections yielded an undefined todayTask, then rendering todayTask.day crashed. Both dashboards now render an honest empty state without a completion button when there is no challenge. They continue rendering actual challenge data when present. A root React error boundary provides a reload screen for other unexpected rendering errors rather than an empty page.
+
+Validation: 47 tests pass, TypeScript passes, production build passes (existing bundle-size warning). Empty-dashboard tests failed on the original code and pass after the fix. The database migration is live, but the revised account-admin function deployment was rejected by automatic approval review pending explicit privileged deployment approval. Both revised Edge Function sources and the frontend are committed for review; do not describe those code changes as live until deployed. This section supersedes older first-login requirements below.
+
 ## Current administrator approval policy
 
 The production frontend was released at main commit `14325e3`. With the owner's subsequent policy change, the existing active administrator's email was confirmed through the Auth Admin API, without changing the password or removing the required password-change gate. The other 24 imported profiles are pending administrator approval. New public signups always create pending profiles, regardless of requested role; public signup still cannot create an administrator.

@@ -283,4 +283,15 @@ await test("service-only binding repairs delayed Auth metadata without changing 
 await test("ordinary users cannot invoke trusted legacy binding",async()=>{
  await assert.rejects(()=>actor(2,"select public.codegenz_bind_legacy_account($1)",[uid(2)]),/permission denied/);
 });
+await test("initial password flags are cleared while explicit admin resets remain protected",async()=>{
+ for(const n of [20,21]) {
+  await db.query("insert into auth.users(id,email,raw_app_meta_data) values($1,$2,$3)",[uid(n),`synthetic-${n}@example.invalid`,{legacy_id:`test-${n}`}]);
+  await db.query("update codegenz_profiles set data=data||$2 where auth_user_id=$1",[uid(n),{status:"active",mustChangePassword:true}]);
+  await db.query("insert into auth.sessions(id,user_id) values($1,$2)",[sid(n),uid(n)]);
+ }
+ await db.query("insert into codegenz_documents(collection,id,data) values('audit_logs','synthetic-reset',$1)",[{action:"ADMIN_RESET_PASSWORD",resource:"user:test-21",status:"SUCCESS"}]);
+ await db.exec(await readFile(new URL("../supabase/schema/disable-first-login-password-change.sql",import.meta.url),"utf8"));
+ const first=await actor(20,"select codegenz_private.actor() as actor");assert.ok(first[0].actor);
+ const reset=await actor(21,"select codegenz_private.actor() as actor");assert.equal(reset[0].actor,null);
+});
 await db.close();
