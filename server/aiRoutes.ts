@@ -36,7 +36,7 @@ function getGeminiClient(requestToken?: string) {
       const data = await response.json().catch(() => null);
       if (!response.ok) {
         // Never log raw provider payloads or authorization credentials.
-        throw Object.assign(new Error('AI Gateway request failed'), { status: response.status, code: data?.error?.code });
+        throw Object.assign(new Error('AI Gateway request failed'), { status: response.status, code: data?.error?.code || data?.error?.type });
       }
       const text = data?.choices?.[0]?.message?.content;
       if (typeof text !== 'string' || !text.trim()) throw new Error('Empty AI Gateway response');
@@ -104,7 +104,16 @@ Hãy đưa ra câu trả lời thấu cảm, thực tế và mang lại lời kh
       res.json({ reply });
     } catch (error: any) {
       console.error("AI Chat request failed", { status: error?.status, code: error?.code });
-      res.status(502).json({ error: "Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên." });
+      const providerStatus = typeof error?.status === 'number' ? error.status : undefined;
+      const code = typeof error?.code === 'string' && /^[a-zA-Z0-9_:-]{1,80}$/.test(error.code) ? error.code : 'AI_PROVIDER_ERROR';
+      const message = providerStatus === 402
+        ? 'Dịch vụ AI chưa có credit hoặc đã hết ngân sách. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
+        : providerStatus === 401 || providerStatus === 403
+        ? 'Dịch vụ AI cần xác minh hoặc cấp quyền tài khoản. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
+        : providerStatus === 429
+        ? 'Dịch vụ AI đang đạt giới hạn sử dụng. Vui lòng thử lại sau ít phút.'
+        : 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên.';
+      res.status(502).json({ error: message, code, providerStatus });
     }
   });
 
@@ -147,7 +156,16 @@ Hãy đóng vai trò chuyên gia tâm lý gia đình CODE GenZ Family và đưa 
       res.json(parsed);
     } catch (error: any) {
       console.error("Parent coach request failed", { status: error?.status });
-      res.status(502).json({ error: "Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên." });
+      const providerStatus = typeof error?.status === 'number' ? error.status : undefined;
+      const code = typeof error?.code === 'string' && /^[a-zA-Z0-9_:-]{1,80}$/.test(error.code) ? error.code : 'AI_PROVIDER_ERROR';
+      const message = providerStatus === 402
+        ? 'Dịch vụ AI chưa có credit hoặc đã hết ngân sách. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
+        : providerStatus === 401 || providerStatus === 403
+        ? 'Dịch vụ AI cần xác minh hoặc cấp quyền tài khoản. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
+        : providerStatus === 429
+        ? 'Dịch vụ AI đang đạt giới hạn sử dụng. Vui lòng thử lại sau ít phút.'
+        : 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên.';
+      res.status(502).json({ error: message, code, providerStatus });
     }
   });
 
@@ -178,7 +196,16 @@ Trả về JSON định dạng: { "icebreakers": ["câu 1", "câu 2", "câu 3"] 
       res.json(parsed);
     } catch (error: any) {
       console.error("Icebreaker request failed", { status: error?.status });
-      res.status(502).json({ error: "Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên." });
+      const providerStatus = typeof error?.status === 'number' ? error.status : undefined;
+      const code = typeof error?.code === 'string' && /^[a-zA-Z0-9_:-]{1,80}$/.test(error.code) ? error.code : 'AI_PROVIDER_ERROR';
+      const message = providerStatus === 402
+        ? 'Dịch vụ AI chưa có credit hoặc đã hết ngân sách. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
+        : providerStatus === 401 || providerStatus === 403
+        ? 'Dịch vụ AI cần xác minh hoặc cấp quyền tài khoản. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
+        : providerStatus === 429
+        ? 'Dịch vụ AI đang đạt giới hạn sử dụng. Vui lòng thử lại sau ít phút.'
+        : 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên.';
+      res.status(502).json({ error: message, code, providerStatus });
     }
   });
 
