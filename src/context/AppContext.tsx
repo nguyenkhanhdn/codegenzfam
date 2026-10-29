@@ -954,37 +954,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }).catch(() => {});
   };
 
-  const switchUser = (userId: string) => {
-    const target = users.find((u) => u.id === userId);
-    if (target) {
-      setCurrentUserId(userId);
-      setIsAuthenticated(true);
-      try {
-        localStorage.setItem('codegenz_current_user_id', userId);
-        localStorage.setItem('codegenz_auth_logged_in', 'true');
-      } catch {}
-
-      if (target.role === 'student' || target.role === 'parent') {
-        const userFam = families.find(
-          (f) =>
-            (target.familyId && f.id === target.familyId) ||
-            f.studentIds.includes(target.id) ||
-            f.parentIds.includes(target.id)
-        );
-        if (userFam) {
-          setFamily(userFam);
-          setActiveFamilyId(userFam.id);
-        }
-      }
-
-      addAuditLog('SWITCH_USER_ROLE', `user:${userId}`, `Chuyển sang người dùng ${target.name} (${target.role})`);
-      if (target.role === 'admin') {
-        setActiveTab('admin');
-      } else {
-        setActiveTab('dashboard');
-      }
-    }
-  };
+  // Account changes require the standard sign-in flow.
+  const switchUser = (_userId: string) => { openAuthModal('login'); };
 
   const addHappinessPoints = (amount: number, source: HappinessPointRecord['source'], sourceTitle: string) => {
     const newRecord: HappinessPointRecord = {
