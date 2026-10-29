@@ -1,6 +1,6 @@
-import { buildLegacyBackup, hasLegacyAccount } from '../../services/legacyAccountRecovery';
+import { buildLegacyBackup } from '../../services/legacyAccountRecovery';
 import { downloadFile } from '../../services/dataStorageService';
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   X,
   LogIn,
@@ -17,9 +17,9 @@ import {
   AlertCircle,
   KeyRound,
   ArrowRight,
-} from 'lucide-react';
-import { useApp } from '../../context/AppContext';
-import { UserRole, FamilyRole } from '../../types';
+} from "lucide-react";
+import { useApp } from "../../context/AppContext";
+import { UserRole, FamilyRole } from "../../types";
 
 export const AuthModal: React.FC = () => {
   const {
@@ -29,30 +29,33 @@ export const AuthModal: React.FC = () => {
     closeAuthModal,
     login,
     register,
+    users,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>(authModalTab);
+  const [activeTab, setActiveTab] = useState<"login" | "register">(
+    authModalTab,
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
   // Register form state
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regConfirmPassword, setRegConfirmPassword] = useState('');
-  const [regRole, setRegRole] = useState<UserRole>('student');
-  const [regFamilyRole, setRegFamilyRole] = useState<FamilyRole>('student');
-  const [regFamilyCode, setRegFamilyCode] = useState('');
-  const [regGrade, setRegGrade] = useState('');
-  const [regTitle, setRegTitle] = useState('');
-  const [regPhone, setRegPhone] = useState('');
-  const [regBio, setRegBio] = useState('');
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  const [regRole, setRegRole] = useState<UserRole>("student");
+  const [regFamilyRole, setRegFamilyRole] = useState<FamilyRole>("student");
+  const [regFamilyCode, setRegFamilyCode] = useState("");
+  const [regGrade, setRegGrade] = useState("");
+  const [regTitle, setRegTitle] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regBio, setRegBio] = useState("");
 
   // Sync activeTab when modal prop changes
   React.useEffect(() => {
@@ -66,7 +69,7 @@ export const AuthModal: React.FC = () => {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim()) {
-      setErrorMsg('Vui lòng nhập Email hoặc Tên người dùng.');
+      setErrorMsg("Vui lòng nhập Email đăng nhập.");
       return;
     }
 
@@ -81,7 +84,7 @@ export const AuthModal: React.FC = () => {
 
     setIsLoading(false);
     if (!res.success) {
-      setErrorMsg(hasLegacyAccount(localStorage, loginEmail) ? 'Email này có trong dữ liệu cũ của trình duyệt. Hệ thống chưa xác nhận được đăng nhập; hãy xuất bản sao lưu bên dưới để đối soát và chuyển tài khoản sang Supabase.' : (res.error || 'Đăng nhập không thành công.'));
+      setErrorMsg(res.error || "Đăng nhập không thành công.");
     }
   };
 
@@ -89,23 +92,22 @@ export const AuthModal: React.FC = () => {
     try {
       const backup = buildLegacyBackup(localStorage);
       downloadFile('codegenz_legacy_browser_backup.json', JSON.stringify(backup, null, 2), 'application/json');
-      setSuccessMsg('Đã xuất dữ liệu cũ của trình duyệt này để đối soát. Tệp không chứa mật khẩu và việc xuất chưa chuyển dữ liệu lên Supabase.');
-      setErrorMsg('');
-    } catch (error) { setErrorMsg(error instanceof Error ? error.message : 'Không thể xuất dữ liệu cũ.'); }
+      setSuccessMsg('Đã xuất bản sao lưu cũ của trình duyệt. Tệp không chứa mật khẩu và chưa được nhập lên Supabase.');setErrorMsg(null);
+    } catch(error) {setErrorMsg(error instanceof Error ? error.message : 'Không thể xuất dữ liệu cũ.');}
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regName.trim() || !regEmail.trim()) {
-      setErrorMsg('Vui lòng nhập Họ tên và Email.');
+      setErrorMsg("Vui lòng nhập Họ tên và Email.");
       return;
     }
-    if (regPassword && regPassword.length < 6) {
-      setErrorMsg('Mật khẩu tối thiểu 6 ký tự.');
+    if (regPassword && regPassword.length < 10) {
+      setErrorMsg("Mật khẩu tối thiểu 10 ký tự.");
       return;
     }
     if (regPassword !== regConfirmPassword) {
-      setErrorMsg('Mật khẩu xác nhận không khớp.');
+      setErrorMsg("Mật khẩu xác nhận không khớp.");
       return;
     }
 
@@ -116,9 +118,14 @@ export const AuthModal: React.FC = () => {
     const res = await register({
       name: regName.trim(),
       email: regEmail.trim(),
-      password: regPassword || 'password123',
+      password: regPassword,
       role: regRole,
-      familyRole: regRole === 'student' ? 'student' : regRole === 'parent' ? regFamilyRole : 'none',
+      familyRole:
+        regRole === "student"
+          ? "student"
+          : regRole === "parent"
+            ? regFamilyRole
+            : "none",
       familyCode: regFamilyCode.trim() || undefined,
       grade: regGrade.trim() || undefined,
       title: regTitle.trim() || undefined,
@@ -128,7 +135,7 @@ export const AuthModal: React.FC = () => {
 
     setIsLoading(false);
     if (!res.success) {
-      setErrorMsg(res.error || 'Đăng ký không thành công.');
+      setErrorMsg(res.error || "Đăng ký không thành công.");
     }
   };
 
@@ -158,9 +165,11 @@ export const AuthModal: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="text-xl font-bold tracking-tight">CODE GenZ Family</h3>
+                <h3 className="text-xl font-bold tracking-tight">
+                  CODE GenZ Family
+                </h3>
                 <span className="px-2 py-0.5 text-[11px] font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 rounded-full">
-                  Bảo mật SQLite
+                  Supabase Auth
                 </span>
               </div>
               <p className="text-xs text-indigo-100/90 mt-0.5">
@@ -175,13 +184,13 @@ export const AuthModal: React.FC = () => {
               id="tab-login-btn"
               type="button"
               onClick={() => {
-                setActiveTab('login');
+                setActiveTab("login");
                 setErrorMsg(null);
               }}
               className={`flex-1 flex items-center justify-center space-x-2 py-2 text-sm font-medium rounded-lg transition-all ${
-                activeTab === 'login'
-                  ? 'bg-white text-indigo-700 shadow-sm'
-                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                activeTab === "login"
+                  ? "bg-white text-indigo-700 shadow-sm"
+                  : "text-white/80 hover:text-white hover:bg-white/5"
               }`}
             >
               <LogIn className="w-4 h-4" />
@@ -191,13 +200,13 @@ export const AuthModal: React.FC = () => {
               id="tab-register-btn"
               type="button"
               onClick={() => {
-                setActiveTab('register');
+                setActiveTab("register");
                 setErrorMsg(null);
               }}
               className={`flex-1 flex items-center justify-center space-x-2 py-2 text-sm font-medium rounded-lg transition-all ${
-                activeTab === 'register'
-                  ? 'bg-white text-indigo-700 shadow-sm'
-                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                activeTab === "register"
+                  ? "bg-white text-indigo-700 shadow-sm"
+                  : "text-white/80 hover:text-white hover:bg-white/5"
               }`}
             >
               <UserPlus className="w-4 h-4" />
@@ -229,13 +238,13 @@ export const AuthModal: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'login' ? (
+          {activeTab === "login" ? (
             /* ================= LOGIN TAB ================= */
             <div className="space-y-5">
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Email hoặc Tên người dùng <span className="text-rose-500">*</span>
+                    Email đăng nhập <span className="text-rose-500">*</span>
                   </label>
                   <input
                     id="login-email-input"
@@ -253,12 +262,14 @@ export const AuthModal: React.FC = () => {
                     <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
                       Mật khẩu
                     </label>
-
+                    <span className="text-xs text-slate-400">
+                      Nhập mật khẩu của bạn
+                    </span>
                   </div>
                   <div className="relative">
                     <input
                       id="login-password-input"
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       placeholder="Nhập mật khẩu..."
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
@@ -269,7 +280,11 @@ export const AuthModal: React.FC = () => {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -290,12 +305,11 @@ export const AuthModal: React.FC = () => {
                   )}
                 </button>
               </form>
-
               <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3" aria-labelledby="legacy-recovery-title">
-                <h3 id="legacy-recovery-title" className="font-semibold text-sm text-amber-950">Đã đăng ký nhưng không đăng nhập được?</h3>
-                <p className="text-xs text-amber-900">Bản cũ có thể chỉ lưu tài khoản trên thiết bị đã đăng ký. Hãy mở đúng trình duyệt đó và xuất dữ liệu để chuyển sang Supabase.</p>
-                <button type="button" onClick={handleExportLegacy} className="rounded-lg border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-950">Xuất dữ liệu cũ để chuyển Supabase</button>
-                {loginEmail.trim().toLowerCase().endsWith('@gmai.com') && <p role="status" className="text-xs text-amber-900">Bạn đang nhập đuôi gmai.com. Nếu dùng Gmail, hãy kiểm tra lại gmail.com; hệ thống giữ nguyên địa chỉ bạn nhập.</p>}
+                <h3 id="legacy-recovery-title" className="font-semibold text-sm text-amber-950">Khôi phục tài khoản từ bản cũ</h3>
+                <p className="text-xs text-amber-900">Nếu đã đăng ký trên bản cũ, hãy dùng đúng trình duyệt đó để xuất dữ liệu cho bước đối soát và chuyển đổi.</p>
+                <button type="button" onClick={handleExportLegacy} className="rounded-lg border border-amber-400 bg-white px-4 py-2 text-sm font-semibold">Xuất dữ liệu cũ để chuyển Supabase</button>
+                {loginEmail.trim().toLowerCase().endsWith('@gmai.com') && <p role="status" className="text-xs text-amber-900">Bạn đang nhập gmai.com. Nếu dùng Gmail, hãy kiểm tra lại gmail.com; hệ thống giữ nguyên email bạn nhập.</p>}
               </section>
 
             </div>
@@ -305,58 +319,65 @@ export const AuthModal: React.FC = () => {
               {/* Role Selection */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                  1. Chọn vai trò tài khoản <span className="text-rose-500">*</span>
+                  1. Chọn vai trò tài khoản{" "}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => {
-                      setRegRole('student');
-                      setRegFamilyRole('student');
+                      setRegRole("student");
+                      setRegFamilyRole("student");
                     }}
                     className={`p-3 text-center rounded-xl border transition-all ${
-                      regRole === 'student'
-                        ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-2 ring-indigo-500/20'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      regRole === "student"
+                        ? "bg-indigo-50 border-indigo-500 text-indigo-700 ring-2 ring-indigo-500/20"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                     }`}
                   >
                     <GraduationCap className="w-5 h-5 mx-auto mb-1 text-indigo-600" />
                     <p className="text-xs font-bold">Học sinh</p>
-                    <span className="text-[10px] text-slate-500">GenZ THPT</span>
+                    <span className="text-[10px] text-slate-500">
+                      GenZ THPT
+                    </span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
-                      setRegRole('parent');
-                      setRegFamilyRole('mother');
+                      setRegRole("parent");
+                      setRegFamilyRole("mother");
                     }}
                     className={`p-3 text-center rounded-xl border transition-all ${
-                      regRole === 'parent'
-                        ? 'bg-pink-50 border-pink-500 text-pink-700 ring-2 ring-pink-500/20'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      regRole === "parent"
+                        ? "bg-pink-50 border-pink-500 text-pink-700 ring-2 ring-pink-500/20"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                     }`}
                   >
                     <Users className="w-5 h-5 mx-auto mb-1 text-pink-600" />
                     <p className="text-xs font-bold">Phụ huynh</p>
-                    <span className="text-[10px] text-slate-500">Bố / Mẹ / Giám hộ</span>
+                    <span className="text-[10px] text-slate-500">
+                      Bố / Mẹ / Giám hộ
+                    </span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
-                      setRegRole('psychologist');
-                      setRegFamilyRole('none');
+                      setRegRole("psychologist");
+                      setRegFamilyRole("none");
                     }}
                     className={`p-3 text-center rounded-xl border transition-all ${
-                      regRole === 'psychologist'
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 ring-2 ring-emerald-500/20'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      regRole === "psychologist"
+                        ? "bg-emerald-50 border-emerald-500 text-emerald-700 ring-2 ring-emerald-500/20"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                     }`}
                   >
                     <Stethoscope className="w-5 h-5 mx-auto mb-1 text-emerald-600" />
                     <p className="text-xs font-bold">Chuyên gia</p>
-                    <span className="text-[10px] text-slate-500">Tâm lý học</span>
+                    <span className="text-[10px] text-slate-500">
+                      Tâm lý học
+                    </span>
                   </button>
                 </div>
               </div>
@@ -427,7 +448,7 @@ export const AuthModal: React.FC = () => {
               </div>
 
               {/* Role-Specific Fields */}
-              {regRole === 'student' && (
+              {regRole === "student" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -456,7 +477,7 @@ export const AuthModal: React.FC = () => {
                 </div>
               )}
 
-              {regRole === 'parent' && (
+              {regRole === "parent" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-pink-50/50 rounded-xl border border-pink-100">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -464,7 +485,9 @@ export const AuthModal: React.FC = () => {
                     </label>
                     <select
                       value={regFamilyRole}
-                      onChange={(e) => setRegFamilyRole(e.target.value as FamilyRole)}
+                      onChange={(e) =>
+                        setRegFamilyRole(e.target.value as FamilyRole)
+                      }
                       className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none"
                     >
                       <option value="mother">Mẹ</option>
@@ -487,7 +510,7 @@ export const AuthModal: React.FC = () => {
                 </div>
               )}
 
-              {regRole === 'psychologist' && (
+              {regRole === "psychologist" && (
                 <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100 space-y-2">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -542,10 +565,10 @@ export const AuthModal: React.FC = () => {
             <span>Dữ liệu được lưu trữ an toàn và phân quyền nghiêm ngặt</span>
           </div>
           <div>
-            {activeTab === 'login' ? (
+            {activeTab === "login" ? (
               <button
                 type="button"
-                onClick={() => setActiveTab('register')}
+                onClick={() => setActiveTab("register")}
                 className="text-indigo-600 hover:underline font-semibold"
               >
                 Chưa có tài khoản? Đăng ký ngay
@@ -553,7 +576,7 @@ export const AuthModal: React.FC = () => {
             ) : (
               <button
                 type="button"
-                onClick={() => setActiveTab('login')}
+                onClick={() => setActiveTab("login")}
                 className="text-indigo-600 hover:underline font-semibold"
               >
                 Đã có tài khoản? Đăng nhập

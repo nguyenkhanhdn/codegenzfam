@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+migration-private/
+*firestore-export*.json
+*migration-report*.json
+supabase/.temp/

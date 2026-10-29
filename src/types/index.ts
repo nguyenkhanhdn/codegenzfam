@@ -17,6 +17,9 @@ export interface UserPermissions {
 }
 
 export interface User {
+  authUserId?: string;
+  version?: number;
+  mustChangePassword?: boolean;
   id: string;
   name: string;
   email: string;

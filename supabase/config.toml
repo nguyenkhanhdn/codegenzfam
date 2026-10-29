@@ -1,0 +1,7 @@
+project_id = "codegenzfam"
+
+[functions.account-admin]
+verify_jwt = true # Platform JWT validation plus getUser and a live database session in the handler.
+
+[functions.migrate-codegenz]
+verify_jwt = true # Platform JWT check plus a short-lived, scoped migration grant.
