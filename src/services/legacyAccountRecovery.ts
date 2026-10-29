@@ -17,7 +17,8 @@ const caches = {
 function rows(storage: LegacyStorage, key: string): Record<string, unknown>[] | null {
   const raw = storage.getItem(key);
   if (raw === null) return null;
-  const value = JSON.parse(raw);
+  let value: unknown;
+  try { value = JSON.parse(raw); } catch { throw new Error('Bộ nhớ dữ liệu cũ không hợp lệ. Chưa xuất để tránh bỏ sót bản ghi.'); }
   if (!Array.isArray(value) || value.some(row => !row || typeof row !== 'object' || Array.isArray(row))) {
     throw new Error('Bộ nhớ dữ liệu cũ không hợp lệ. Chưa xuất để tránh bỏ sót bản ghi.');
   }
