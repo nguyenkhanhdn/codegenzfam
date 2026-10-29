@@ -1,3 +1,5 @@
+import { buildLegacyBackup, hasLegacyAccount } from '../../services/legacyAccountRecovery';
+import { downloadFile } from '../../services/dataStorageService';
 import React, { useState } from 'react';
 import {
   X,
@@ -80,8 +82,17 @@ export const AuthModal: React.FC = () => {
 
     setIsLoading(false);
     if (!res.success) {
-      setErrorMsg(res.error || 'Đăng nhập không thành công.');
+      setErrorMsg(hasLegacyAccount(localStorage, loginEmail) ? 'Email này có trong dữ liệu cũ của trình duyệt. Hệ thống chưa xác nhận được đăng nhập; hãy xuất bản sao lưu bên dưới để đối soát và chuyển tài khoản sang Supabase.' : (res.error || 'Đăng nhập không thành công.'));
     }
+  };
+
+  const handleExportLegacy = () => {
+    try {
+      const backup = buildLegacyBackup(localStorage);
+      downloadFile('codegenz_legacy_browser_backup.json', JSON.stringify(backup, null, 2), 'application/json');
+      setSuccessMsg('Đã xuất dữ liệu cũ của trình duyệt này để đối soát. Tệp không chứa mật khẩu và việc xuất chưa chuyển dữ liệu lên Supabase.');
+      setErrorMsg('');
+    } catch (error) { setErrorMsg(error instanceof Error ? error.message : 'Không thể xuất dữ liệu cũ.'); }
   };
 
   const handleQuickLogin = async (userEmail: string, defaultPass = 'password123') => {
@@ -293,6 +304,13 @@ export const AuthModal: React.FC = () => {
                   )}
                 </button>
               </form>
+
+              <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3" aria-labelledby="legacy-recovery-title">
+                <h3 id="legacy-recovery-title" className="font-semibold text-sm text-amber-950">Đã đăng ký nhưng không đăng nhập được?</h3>
+                <p className="text-xs text-amber-900">Bản cũ có thể chỉ lưu tài khoản trên thiết bị đã đăng ký. Hãy mở đúng trình duyệt đó và xuất dữ liệu để chuyển sang Supabase.</p>
+                <button type="button" onClick={handleExportLegacy} className="rounded-lg border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-950">Xuất dữ liệu cũ để chuyển Supabase</button>
+                {loginEmail.trim().toLowerCase().endsWith('@gmai.com') && <p role="status" className="text-xs text-amber-900">Bạn đang nhập đuôi gmai.com. Nếu dùng Gmail, hãy kiểm tra lại gmail.com; hệ thống giữ nguyên địa chỉ bạn nhập.</p>}
+              </section>
 
               {/* Quick Demo Login Section with Tabs / Grid */}
               <div className="pt-4 border-t border-slate-100">
