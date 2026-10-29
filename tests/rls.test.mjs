@@ -35,6 +35,8 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec("create table public.users(id text primary key,email text)");
+await db.exec(await readFile(new URL("../supabase/schema/legacy-bindings.sql",import.meta.url),"utf8"));
 for (const [n, role, family] of [
   [1, "admin", ""],
   [2, "student", "fam-a"],
@@ -263,5 +265,20 @@ await test("self-registered metadata cannot create an administrator", async () =
   );
   assert.equal(r.rows[0].data.role, "student");
   assert.deepEqual(r.rows[0].data.permissions, {});
+});
+await test("service-only binding repairs delayed Auth metadata without changing the account",async()=>{
+ await db.query("insert into auth.users(id,email) values($1,$2)",[uid(15),"synthetic-binding@example.invalid"]);
+ await db.query("insert into public.users(id,email) values($1,$2)",["source-15","synthetic-binding@example.invalid"]);
+ await db.query("update auth.users set raw_app_meta_data=$2 where id=$1",[uid(15),{legacy_id:"source-15",migration_source:"public.users"}]);
+ await db.exec("begin;set local role service_role");
+ await db.query("update codegenz_profiles set data=data||$2 where auth_user_id=$1",[uid(15),{id:"source-15",migrationSource:"public.users"}]);
+ await db.exec("commit");
+ await db.exec("begin;set local role service_role");
+ await db.query("select public.codegenz_bind_legacy_account($1)",[uid(15)]);await db.exec("commit");
+ assert.equal((await db.query("select legacy_id from codegenz_profiles where auth_user_id=$1",[uid(15)])).rows[0].legacy_id,"source-15");
+ await assert.rejects(()=>db.query("update codegenz_profiles set legacy_id='unrelated' where auth_user_id=$1",[uid(15)]),/Identity is immutable/);
+});
+await test("ordinary users cannot invoke trusted legacy binding",async()=>{
+ await assert.rejects(()=>actor(2,"select public.codegenz_bind_legacy_account($1)",[uid(2)]),/permission denied/);
 });
 await db.close();

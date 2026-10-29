@@ -68,12 +68,14 @@ if (!token)
   throw new Error(
     "Set a short-lived MIGRATION_TOKEN. Never put it in source or chat.",
   );
+const migrationJwt = process.env.MIGRATION_JWT;
+if (!migrationJwt) throw new Error("Set MIGRATION_JWT for the platform JWT check; the scoped MIGRATION_TOKEN is still required.");
 const url =
   process.env.SUPABASE_URL || "https://tqnzlwkakeocxufznjfi.supabase.co";
 async function call(body) {
   const r = await fetch(url + "/functions/v1/migrate-codegenz", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-migration-token": token },
+    headers: { "Content-Type": "application/json", "x-migration-token": token, Authorization: `Bearer ${migrationJwt}` },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(120000),
   });

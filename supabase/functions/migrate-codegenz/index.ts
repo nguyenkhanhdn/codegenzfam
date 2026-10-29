@@ -1,3 +1,4 @@
+import { migrateLegacyUsers } from "./legacy-users.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 const db = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -35,6 +36,16 @@ Deno.serve(async (req: Request) => {
         { status: 401 },
       );
     const body = await req.json();
+    if (run.manifest?.source === "public.users") {
+      if (body.action === "legacy-users") {
+        const result = await migrateLegacyUsers(db, body);
+        if (body.verify) {
+          check(await db.from("codegenz_migration_runs").update({completed:true,manifest:{...run.manifest,...result}}).eq("id",run.id));
+        }
+        return Response.json(result, {headers:{"Cache-Control":"no-store"}});
+      }
+      return Response.json({error:"This grant only allows the approved users migration"},{status:403});
+    }
     if (body.action === "complete") {
       check(
         await db
@@ -164,12 +175,15 @@ Deno.serve(async (req: Request) => {
       imported++;
     }
     return Response.json({ imported });
-  } catch {
-    console.error("Migration batch failed; source retained.");
+  } catch (error) {
+    const code = String(error?.migrationCode || "MAPPING_FAILED").replace(/[^a-zA-Z0-9_]/g, "");
+    console.error("Migration batch failed; source retained.", { code });
     return Response.json(
       {
         error:
           "Migration batch failed. Inspect source mappings and retry; completed rows are preserved.",
+        code,
+        stage: String(error?.migrationStage || "unknown").replace(/[^a-zA-Z0-9_-]/g, ""),
       },
       { status: 400 },
     );

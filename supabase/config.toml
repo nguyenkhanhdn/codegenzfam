@@ -4,4 +4,4 @@ project_id = "codegenzfam"
 verify_jwt = true # Platform JWT validation plus getUser and a live database session in the handler.
 
 [functions.migrate-codegenz]
-verify_jwt = false # Short-lived, hashed migration grant required inside the handler.
+verify_jwt = true # Platform JWT check plus a short-lived, scoped migration grant.
