@@ -4,6 +4,9 @@
   "buildCommand": "npx vite build",
   "outputDirectory": "dist",
   "functions": {
-    "api/ai/[action].ts": { "maxDuration": 60 }
-  }
+    "api/ai/[action].ts": {
+      "maxDuration": 60
+    }
+  },
+  "installCommand": "npm ci"
 }

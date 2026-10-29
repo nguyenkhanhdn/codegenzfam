@@ -1,0 +1,7 @@
+project_id = "codegenzfam"
+
+[functions.account-admin]
+verify_jwt = false # The handler verifies getUser AND a live database session itself.
+
+[functions.migrate-codegenz]
+verify_jwt = false # Short-lived, hashed migration grant required inside the handler.
