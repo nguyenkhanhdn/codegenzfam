@@ -12,13 +12,6 @@ import {
   Plus,
   Lock,
   Unlock,
-  Database,
-  Download,
-  FileCode2,
-  FileJson,
-  Table,
-  Upload,
-  HardDrive,
   UserCheck,
   UserX,
   KeyRound,
@@ -35,21 +28,9 @@ import {
   Clock3,
   RefreshCw,
 } from "lucide-react";
-import {
-  exportToXml,
-  exportToJson,
-  exportToSqlDump,
-  downloadFile,
-} from "../../services/dataStorageService";
 import { User, UserRole, FamilyRole, UserPermissions } from "../../types";
 
-interface AdminDashboardProps {
-  onOpenDataManagement?: () => void;
-}
-
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  onOpenDataManagement,
-}) => {
+export const AdminDashboard: React.FC = () => {
   const {
     users,
     currentUser,
@@ -67,11 +48,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     adminToggleUserStatus,
     adminResetPassword,
     adminDeleteUser,
-    getFullDatabaseSnapshot,
   } = useApp();
 
   const [activeAdminTab, setActiveAdminTab] = useState<
-    "overview" | "pending" | "users" | "challenges" | "deeptalk" | "database" | "audit"
+    "overview" | "pending" | "users" | "challenges" | "deeptalk" | "audit"
   >("overview");
 
   // User Management State
@@ -139,36 +119,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const showBanner = (type: "success" | "error", text: string) => {
     setNotificationBanner({ type, text });
     setTimeout(() => setNotificationBanner(null), 4000);
-  };
-
-  const handleDownloadXml = () => {
-    const db = getFullDatabaseSnapshot();
-    const xml = exportToXml(db);
-    downloadFile(
-      `codegenz_admin_export_${new Date().toISOString().slice(0, 10)}.xml`,
-      xml,
-      "application/xml;charset=utf-8",
-    );
-  };
-
-  const handleDownloadJson = () => {
-    const db = getFullDatabaseSnapshot();
-    const json = exportToJson(db);
-    downloadFile(
-      `codegenz_admin_export_${new Date().toISOString().slice(0, 10)}.json`,
-      json,
-      "application/json;charset=utf-8",
-    );
-  };
-
-  const handleDownloadSql = () => {
-    const db = getFullDatabaseSnapshot();
-    const sql = exportToSqlDump(db);
-    downloadFile(
-      `codegenz_admin_schema_${new Date().toISOString().slice(0, 10)}.sql`,
-      sql,
-      "application/sql;charset=utf-8",
-    );
   };
 
   const handleCreateChallenge = (e: React.FormEvent) => {
@@ -403,7 +353,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             id: "deeptalk",
             label: `Chủ đề Deep Talk (${deepTalkTopics.length})`,
           },
-          { id: "database", label: "XML Database & sao lưu lâu dài" },
           { id: "audit", label: `Kiểm toán bảo mật (${auditLogs.length})` },
         ].map((tab) => (
           <button
@@ -1522,102 +1471,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </span>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tab 5: Database & Long Term XML Storage */}
-      {activeAdminTab === "database" && (
-        <div className="bg-white rounded-3xl p-6 border border-purple-100/80 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 mb-1">
-                LONG-TERM DATA PERSISTENCE ENGINE
-              </div>
-              <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                <Database className="w-5 h-5 text-indigo-600" />
-                Quản Lý Dữ Liệu & Chuyển Đổi XML / Database Lâu Dài
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Hỗ trợ trích xuất toàn bộ dữ liệu nền tảng ra định dạng XML cấu
-                trúc chuẩn, JSON NoSQL, và tập lệnh SQL Schema
-                (PostgreSQL/Supabase).
-              </p>
-            </div>
-
-            {onOpenDataManagement && (
-              <button
-                onClick={onOpenDataManagement}
-                className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2"
-              >
-                <HardDrive className="w-4 h-4" />
-                <span>Mở Trình Quản Lý & Nhập Tệp XML</span>
-              </button>
-            )}
-          </div>
-
-          {/* Quick Export Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 bg-gradient-to-br from-indigo-50/70 to-purple-50/50 rounded-2xl border border-indigo-200 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-indigo-950 font-extrabold text-sm mb-1">
-                  <FileCode2 className="w-4 h-4 text-indigo-600" />
-                  <span>Xuất Tệp XML (.xml)</span>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Cấu trúc XML chuẩn thẻ phân cấp có CDATA tiếng Việt, gồm{" "}
-                  {users.length} người dùng, {journalEntries.length} nhật ký,{" "}
-                  {consultations.length} phiên tham vấn.
-                </p>
-              </div>
-              <button
-                onClick={handleDownloadXml}
-                className="mt-4 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Tải XML Backup</span>
-              </button>
-            </div>
-
-            <div className="p-5 bg-gradient-to-br from-amber-50/70 to-pink-50/40 rounded-2xl border border-amber-200 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-amber-950 font-extrabold text-sm mb-1">
-                  <FileJson className="w-4 h-4 text-amber-600" />
-                  <span>Xuất Tệp JSON (.json)</span>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Định dạng JSON Document tương thích MongoDB, Firebase
-                  Firestore, lưu trữ toàn vẹn trạng thái hệ thống.
-                </p>
-              </div>
-              <button
-                onClick={handleDownloadJson}
-                className="mt-4 w-full py-2 bg-gradient-to-r from-amber-500 to-pink-600 hover:from-amber-600 hover:to-pink-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Tải JSON Snapshot</span>
-              </button>
-            </div>
-
-            <div className="p-5 bg-gradient-to-br from-cyan-50/70 to-sky-50/40 rounded-2xl border border-cyan-200 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-cyan-950 font-extrabold text-sm mb-1">
-                  <Table className="w-4 h-4 text-cyan-600" />
-                  <span>Xuất SQL Dump (.sql)</span>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Tập lệnh CREATE TABLE & INSERT tương thích PostgreSQL,
-                  Supabase, Cloud SQL lưu trữ cơ sở dữ liệu quan hệ dài hạn.
-                </p>
-              </div>
-              <button
-                onClick={handleDownloadSql}
-                className="mt-4 w-full py-2 bg-cyan-700 hover:bg-cyan-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Tải SQL Dump Script</span>
-              </button>
-            </div>
           </div>
         </div>
       )}

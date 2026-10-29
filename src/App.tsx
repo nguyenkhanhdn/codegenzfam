@@ -139,9 +139,7 @@ const MainApp: React.FC = () => {
         }
         if (currentUser.role === "admin") {
           return (
-            <AdminDashboard
-              onOpenDataManagement={() => setIsDataManagementOpen(true)}
-            />
+            <AdminDashboard />
           );
         }
         return null;
@@ -232,9 +230,7 @@ const MainApp: React.FC = () => {
           );
         }
         return (
-          <AdminDashboard
-            onOpenDataManagement={() => setIsDataManagementOpen(true)}
-          />
+          <AdminDashboard />
         );
 
       case "ai_coach":
