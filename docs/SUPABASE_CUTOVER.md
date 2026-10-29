@@ -83,3 +83,11 @@ Auth may apply app_metadata after the initial INSERT trigger, leaving the profil
 All migrated identities retain unconfirmed email status: the old verified badge is not evidence of email ownership. They require email confirmation and a password change through the new frontend. No emails were sent automatically. Eight user records reference missing families (family-2 through family-5); references were retained exactly and no family assignments were invented. Only accounts were migrated in this step; family/journal/notification documents and website cutover remain separate pending work.
 
 Validation: 35 automated tests pass and TypeScript passes. Live migration verification completed for 25/25 accounts; its temporary grant is closed and the local token was removed. The production frontend has not yet been switched to this draft integration.
+
+## Administrator approval queue UI
+
+The administration dashboard has a dedicated Chờ duyệt tab and overview shortcut, an explicit approve button for each pending account, a pending status badge, search/role filters, refresh and loading/error states. Account lists are fetched through the authenticated account-admin list endpoint with pagination, rather than treating the current browser's own profile as the complete list. Approval uses the existing server-authorized status action and refreshes the account data.
+
+The screenshot showing one administrator was caused by an incomplete password-change gate: it was nested in the student dashboard branch, so administrators could render their dashboard while mustChangePassword was still true. RLS correctly exposed only the current profile in that state. The gate now precedes every content route and applies to all roles. Administrators must finish the password change and sign in again before viewing the full pending queue; no RLS rules or credentials were weakened.
+
+Validation for this change: 41 tests, TypeScript and production build pass. Regression tests render each role with a required password change, including the direct admin route, and test paginated pending-account loading and surfaced errors. Supabase currently retains 24 pending profiles. No account was approved as part of UI verification.

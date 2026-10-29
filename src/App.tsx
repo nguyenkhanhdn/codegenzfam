@@ -81,38 +81,38 @@ const MainApp: React.FC = () => {
   };
 
   const renderActiveTabContent = () => {
+    if (!authReady)
+      return (
+        <div className="p-12 text-center">
+          Đang xác minh phiên đăng nhập...
+        </div>
+      );
+    if (!isAuthenticated || currentUser.status !== "active")
+      return (
+        <div className="min-h-screen bg-indigo-50 flex items-center justify-center p-6">
+          <div className="max-w-md bg-white rounded-3xl p-8 text-center space-y-5">
+            <CodeGenzLogo size="lg" showTagline />
+            <p>Đăng nhập để sử dụng CODE GenZ Family.</p>
+            {authError && (
+              <p role="alert" className="text-rose-700 text-sm">
+                {authError}
+              </p>
+            )}
+            <button
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl"
+              onClick={() => openAuthModal("login")}
+            >
+              Đăng nhập / Đăng ký
+            </button>
+          </div>
+          <AuthModal />
+        </div>
+      );
+    if (mustChangePassword) return <PasswordChangeGate />;
+
     switch (activeTab) {
       case "dashboard":
         if (currentUser.role === "student") {
-          if (!authReady)
-            return (
-              <div className="p-12 text-center">
-                Đang xác minh phiên đăng nhập...
-              </div>
-            );
-          if (!isAuthenticated || currentUser.status !== "active")
-            return (
-              <div className="min-h-screen bg-indigo-50 flex items-center justify-center p-6">
-                <div className="max-w-md bg-white rounded-3xl p-8 text-center space-y-5">
-                  <CodeGenzLogo size="lg" showTagline />
-                  <p>Đăng nhập để sử dụng CODE GenZ Family.</p>
-                  {authError && (
-                    <p role="alert" className="text-rose-700 text-sm">
-                      {authError}
-                    </p>
-                  )}
-                  <button
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl"
-                    onClick={() => openAuthModal("login")}
-                  >
-                    Đăng nhập / Đăng ký
-                  </button>
-                </div>
-                <AuthModal />
-              </div>
-            );
-          if (mustChangePassword) return <PasswordChangeGate />;
-
           return (
             <StudentDashboard
               onOpenNewJournal={() => setIsJournalModalOpen(true)}

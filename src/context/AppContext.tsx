@@ -36,6 +36,7 @@ import {
   saveCloudDocument,
 } from "../services/cloudDatabaseService";
 import { supabase, accountAction } from "../services/supabaseClient";
+import { loadAdminUserPages } from "../services/adminUsers";
 import { authErrorMessage } from "../services/supabaseConfig";
 import {
   dataRequest,
@@ -86,6 +87,7 @@ interface AppContextType {
   logout: () => void;
 
   // Admin User & RBAC Management
+  reloadAdminUsers: () => Promise<void>;
   adminCreateUser: (
     userData: Partial<User>,
   ) => Promise<{ success: boolean; error?: string }>;
@@ -505,6 +507,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       };
     }
   };
+  const reloadAdminUsers = useCallback(async () => {
+    const generation = loadGeneration.current;
+    const loaded = await loadAdminUserPages(accountAction);
+    if (generation === loadGeneration.current) setUsers(loaded);
+  }, []);
   const adminCreateUser = async (userData: Partial<User>) =>
     runAdmin("create", undefined, { user: userData });
   const adminUpdateUser = async (id: string, updates: Partial<User>) =>
@@ -1495,6 +1502,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         login,
         register,
         logout,
+        reloadAdminUsers,
         adminCreateUser,
         adminUpdateUser,
         adminToggleUserStatus,
