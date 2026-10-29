@@ -38,10 +38,8 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const {
     currentUser,
-    users,
     family,
     notifications,
-    switchUser,
     markNotificationRead,
     markAllNotificationsRead,
     setActiveTab,
@@ -431,48 +429,6 @@ export const Header: React.FC<HeaderProps> = ({
                             <UserPlus className="w-3.5 h-3.5 text-purple-600" />
                             <span>Đăng ký mới</span>
                           </button>
-                        </div>
-
-                        {/* Fast Switch User Header */}
-                        <div className="px-3 py-1.5 border-t border-slate-100 mt-1 mb-1">
-                          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                            Chuyển đổi tài khoản nhanh
-                          </p>
-                        </div>
-
-                        {/* Fast Switch User List */}
-                        <div className="max-h-52 overflow-y-auto space-y-1 pr-1">
-                          {users.map((user) => (
-                            <button
-                              key={user.id}
-                              onClick={() => {
-                                switchUser(user.id);
-                                setShowUserDropdown(false);
-                              }}
-                              className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors ${
-                                user.id === currentUser.id ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-slate-50'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <img
-                                  src={user.avatar}
-                                  alt={user.name}
-                                  className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
-                                />
-                                <div className="min-w-0">
-                                  <div className="text-xs font-bold text-slate-900 truncate">{user.name}</div>
-                                  <div className="text-[10px] text-slate-500 truncate">
-                                    {user.grade || user.title || (user.role === 'parent' ? 'Phụ huynh' : user.role)}
-                                  </div>
-                                </div>
-                              </div>
-                              {user.id === currentUser.id ? (
-                                <UserCheck className="w-4 h-4 text-indigo-600 shrink-0" />
-                              ) : (
-                                <div className="shrink-0">{getRoleBadge(user.role)}</div>
-                              )}
-                            </button>
-                          ))}
                         </div>
 
                         {/* Logout Option in dropdown */}
