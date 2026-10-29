@@ -1,6 +1,14 @@
 # Supabase migration and user management
 
-Target: `supabase-codegenzfam` (`tqnzlwkakeocxufznjfi`). Existing empty legacy tables are retained; the new app uses `codegenz_profiles` and `codegenz_documents`.
+Target: `supabase-codegenzfam` (`tqnzlwkakeocxufznjfi`). Legacy source tables are retained; the new app uses `codegenz_profiles` and `codegenz_documents`.
+
+## Current administrator approval policy
+
+The production frontend was released at main commit `14325e3`. With the owner's subsequent policy change, the existing active administrator's email was confirmed through the Auth Admin API, without changing the password or removing the required password-change gate. The other 24 imported profiles are pending administrator approval. New public signups always create pending profiles, regardless of requested role; public signup still cannot create an administrator.
+
+The administrator's **Duyệt và kích hoạt tài khoản** action confirms Auth email, removes the ban and changes the profile to active, recording approvedAt/approvedBy in the profile and an audit event. Confirmation failure leaves the profile pending. Unauthorized callers cannot approve accounts. Administrator-created accounts are approved as part of creation, and an authorized promotion to admin confirms the email; locked/pending status is not silently changed by a role edit.
+
+Applied migration: `20261029101633_codegenz_admin_account_approval.sql`. account-admin version 2 and migrate-codegenz version 6 are deployed with JWT verification enabled. The single-use administrator confirmation grant completed successfully and its token was removed. Live counts: 1 active/confirmed admin; 24 pending/unconfirmed other accounts. No passwords were changed and no emails were sent. Automated validation: 37 tests, TypeScript and production build pass. Older migration notes below describe the state at the time of each step; this policy supersedes their email-confirmation requirement for administrators.
 
 ## Confirmed state of this change
 

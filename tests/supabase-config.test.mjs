@@ -9,7 +9,7 @@ test('publishable keys take precedence over legacy anon configuration',()=>{
   assert.equal(resolveSupabaseConfig({VITE_SUPABASE_PUBLISHABLE_KEY:'public-publishable',VITE_SUPABASE_ANON_KEY:'public-anon'}).key,'public-publishable');
 });
 test('confirmation and network errors are not reported as an incorrect password',()=>{
-  assert.match(authErrorMessage({code:'email_not_confirmed'}),/xác minh email/);
+  assert.match(authErrorMessage({code:'email_not_confirmed'}),/chưa được quản trị viên phê duyệt/);
   assert.match(authErrorMessage({status:0}),/Chưa kết nối/);
   assert.match(authErrorMessage({code:'user_banned'}),/bị khóa/);
   assert.match(authErrorMessage({code:'over_request_rate_limit'}),/chờ/);

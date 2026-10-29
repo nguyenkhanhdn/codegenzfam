@@ -82,7 +82,7 @@ interface AppContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   register: (
     payload: RegisterPayload,
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => void;
 
   // Admin User & RBAC Management
@@ -429,7 +429,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
   const register = async (
     payload: RegisterPayload,
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; error?: string; message?: string }> => {
     try {
       if (
         !payload.name.trim() ||
@@ -448,16 +448,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       });
       if (error) throw error;
-      if (!data.session) {
-        setAuthModalTab("login");
-        throw new Error(
-          "Đăng ký đã được tiếp nhận. Vui lòng kiểm tra email xác minh rồi đăng nhập.",
-        );
-      }
-      return await login({
-        emailOrName: payload.email,
-        password: payload.password,
-      });
+      if (data.session) await supabase.auth.signOut({scope: "local"});
+      return {
+        success: true,
+        message: "Đăng ký đã được tiếp nhận. Tài khoản đang chờ quản trị viên phê duyệt trước khi đăng nhập.",
+      };
     } catch (error) {
       return {
         success: false,

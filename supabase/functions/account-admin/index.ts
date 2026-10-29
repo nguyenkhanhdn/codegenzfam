@@ -297,6 +297,10 @@ Deno.serve(async (req: Request) => {
       if (target.auth_user_id === identity.user.id && body.status === "locked")
         throw fail("Không thể tự khóa tài khoản đang đăng nhập.");
       updated.status = body.status;
+      if (body.status === "active") {
+        updated.approvedAt = new Date().toISOString();
+        updated.approvedBy = actor.id;
+      }
     } else if (action === "reset-password") {
       password(body.password);
       updated.mustChangePassword = true;
@@ -307,6 +311,15 @@ Deno.serve(async (req: Request) => {
       updated.status = "deleted";
       updated.deletedAt = new Date().toISOString();
     } else throw fail("Thao tác không được hỗ trợ.");
+    // Confirm through Auth only after an authorized admin approval/promotion.
+    // Keep the profile pending until this succeeds so a partial failure cannot grant access.
+    if ((action === "status" && body.status === "active") ||
+        (action === "update" && updated.role === "admin" && target.data.role !== "admin")) {
+      check(await service.auth.admin.updateUserById(target.auth_user_id, {
+        email_confirm: true,
+        ...(action === "status" ? {ban_duration: "none"} : {}),
+      }));
+    }
     // The DB guard serializes updates and protects the last active administrator.
     const saved = check(
       await service
