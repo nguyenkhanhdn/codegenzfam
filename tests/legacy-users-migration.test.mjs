@@ -19,7 +19,7 @@ function adapter() {
  return {db,profiles,identities,creates:()=>creates,fail:()=>{failUpdate=true}};
 }
 test('profile mapping preserves source fields/roles and unresolved family IDs without credentials',()=>{
- const before=JSON.stringify(source);const row=mapLegacyUser(source[0]);assert.equal(row.familyId,'unresolved-family');assert.equal(row.family_id,'unresolved-family');assert.equal(row.role,'admin');assert.equal(row.password,undefined);assert.equal(row.mustChangePassword,true);assert.equal(JSON.stringify(source),before);
+ const before=JSON.stringify(source);const row=mapLegacyUser(source[0]);assert.equal(row.familyId,'unresolved-family');assert.equal(row.family_id,'unresolved-family');assert.equal(row.role,'admin');assert.equal(row.password,undefined);assert.equal(row.mustChangePassword,false);assert.equal(JSON.stringify(source),before);
 });
 test('dry-run validates all source accounts without creating Auth accounts or exposing credentials',async()=>{
  const a=adapter();const result=await migrateLegacyUsers(a.db,{dryRun:true});assert.equal(result.sourceCount,1);assert.equal(a.creates(),0);assert.ok(!JSON.stringify(result).includes(source[0].password));

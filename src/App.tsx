@@ -453,8 +453,8 @@ function PasswordChangeGate() {
       >
         <h1 className="text-xl font-bold">Đổi mật khẩu để tiếp tục</h1>
         <p className="text-sm">
-          Mật khẩu đã được quản trị viên đặt lại hoặc tài khoản vừa được chuyển
-          đổi.
+          Mật khẩu đã được quản trị viên đặt lại. Vui lòng đặt mật khẩu mới
+          để tiếp tục.
         </p>
         <label className="block">
           Mật khẩu mới
