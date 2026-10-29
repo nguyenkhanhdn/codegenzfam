@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useApp } from "../../context/AppContext";
 import {
   ShieldAlert,
@@ -32,6 +32,8 @@ import {
   Sparkles,
   ShieldCheck,
   UserPlus,
+  Clock3,
+  RefreshCw,
 } from "lucide-react";
 import {
   exportToXml,
@@ -60,6 +62,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     adminAddChallengeTask,
     adminAddDeepTalkTopic,
     adminCreateUser,
+    reloadAdminUsers,
     adminUpdateUser,
     adminToggleUserStatus,
     adminResetPassword,
@@ -68,10 +71,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   } = useApp();
 
   const [activeAdminTab, setActiveAdminTab] = useState<
-    "overview" | "users" | "challenges" | "deeptalk" | "database" | "audit"
+    "overview" | "pending" | "users" | "challenges" | "deeptalk" | "database" | "audit"
   >("overview");
 
   // User Management State
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState("");
+  const [statusBusyId, setStatusBusyId] = useState<string | null>(null);
+  const loadUsers = useCallback(async () => {
+    setUsersLoading(true);
+    setUsersError("");
+    try { await reloadAdminUsers(); }
+    catch (error) { setUsersError(error instanceof Error ? error.message : "Không thể tải danh sách người dùng."); }
+    finally { setUsersLoading(false); }
+  }, [reloadAdminUsers]);
+  useEffect(() => { void loadUsers(); }, [loadUsers]);
+  const pendingUsers = users.filter((user) => user.status === "pending");
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [passwordTarget, setPasswordTarget] = useState<User | null>(null);
@@ -259,16 +274,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleToggleLock = async (user: User) => {
+    if (statusBusyId) return;
     const newStatus = user.status === "active" ? "locked" : "active";
-    const res = await adminToggleUserStatus(user.id, newStatus);
-    if (res.success) {
-      showBanner(
-        "success",
-        `Đã ${newStatus === "locked" ? "khóa" : "mở khóa"} tài khoản ${user.name}.`,
-      );
-    } else {
-      showBanner("error", res.error || "Lỗi đổi trạng thái.");
-    }
+    setStatusBusyId(user.id);
+    try {
+      const res = await adminToggleUserStatus(user.id, newStatus);
+      if (res.success) {
+        showBanner("success", user.status === "pending"
+          ? `Đã duyệt và kích hoạt tài khoản ${user.name}.`
+          : `Đã ${newStatus === "locked" ? "khóa" : "mở khóa"} tài khoản ${user.name}.`);
+      } else showBanner("error", res.error || "Lỗi đổi trạng thái.");
+    } finally { setStatusBusyId(null); }
   };
 
   const handleResetUserPass = (user: User) => {
@@ -332,9 +348,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return (
       matchSearch &&
       matchRole &&
-      (statusFilter === "all" || (u.status || "active") === statusFilter)
+      ((activeAdminTab === "pending" ? "pending" : statusFilter) === "all" ||
+       (u.status || "active") === (activeAdminTab === "pending" ? "pending" : statusFilter))
     );
   });
+
+  const selectAdminTab = (tab: typeof activeAdminTab) => {
+    setActiveAdminTab(tab);
+    if (tab === "pending" || tab === "users") {
+      setUserSearchTerm("");
+      setUserRoleFilter("all");
+      setStatusFilter("all");
+    }
+  };
 
   if (currentUser.role !== "admin")
     return <p role="alert">Bạn không có quyền truy cập quản trị người dùng.</p>;
@@ -367,7 +393,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
         {[
           { id: "overview", label: "Tổng quan chỉ số" },
-          { id: "users", label: `Người dùng (${users.length})` },
+          { id: "pending", label: `Chờ duyệt (${usersLoading ? "…" : usersError ? "!" : pendingUsers.length})` },
+          { id: "users", label: `Người dùng (${usersLoading ? "…" : usersError ? "!" : users.length})` },
           {
             id: "challenges",
             label: `Thử thách 30 ngày (${challengeTasks.length})`,
@@ -381,7 +408,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveAdminTab(tab.id as any)}
+            onClick={() => selectAdminTab(tab.id as typeof activeAdminTab)}
+            aria-pressed={activeAdminTab === tab.id}
             className={`px-4 py-2 rounded-full text-xs font-extrabold uppercase tracking-wider whitespace-nowrap transition-all ${
               activeAdminTab === tab.id
                 ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm"
@@ -396,6 +424,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Tab 1: Overview */}
       {activeAdminTab === "overview" && (
         <div className="space-y-6">
+          <button
+            onClick={() => selectAdminTab("pending")}
+            className="w-full flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-left hover:bg-amber-100"
+          >
+            <span><strong className="block text-amber-900">Tài khoản chờ phê duyệt</strong><span className="text-sm text-amber-800">Xem đăng ký mới và duyệt để kích hoạt tài khoản.</span></span>
+            <span className="rounded-xl bg-white px-4 py-2 text-2xl font-bold text-amber-800">{usersLoading ? "…" : usersError ? "!" : pendingUsers.length}</span>
+          </button>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
             <div className="bg-white p-6 rounded-3xl border border-purple-100/80 shadow-xs hover:border-purple-200 transition-all">
               <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
@@ -475,14 +510,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* Tab 2: Users & RBAC Management */}
-      {activeAdminTab === "users" && (
+      {(activeAdminTab === "users" || activeAdminTab === "pending") && (
         <div className="bg-white rounded-3xl p-6 border border-purple-100/80 shadow-xs space-y-5">
           {/* Header & Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
                 <Users className="w-5 h-5 text-purple-600" />
-                Quản lý & phân quyền người dùng (RBAC)
+                {activeAdminTab === "pending" ? "Danh sách tài khoản chờ duyệt" : "Quản lý & phân quyền người dùng (RBAC)"}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 Xem danh sách, tạo mới, chỉnh sửa thông tin, đặt lại mật khẩu và
@@ -490,6 +525,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </p>
             </div>
 
+            <div className="flex items-center gap-2">
+            <button type="button" onClick={() => void loadUsers()} disabled={usersLoading}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold disabled:opacity-50">
+              <RefreshCw className={`h-4 w-4 ${usersLoading ? "animate-spin" : ""}`} /> Làm mới
+            </button>
             <button
               id="admin-add-user-btn"
               onClick={() => setShowAddUserModal(true)}
@@ -498,8 +538,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <UserPlus className="w-4 h-4" />
               <span>Thêm người dùng mới</span>
             </button>
+            </div>
           </div>
 
+          {usersLoading && <p role="status" className="text-sm text-slate-600">Đang tải danh sách tài khoản từ Supabase...</p>}
+          {usersError && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{usersError} Nhấn Làm mới để thử lại.</p>}
+          {activeAdminTab === "pending" && <p className="text-sm text-slate-600">Duyệt tài khoản để xác nhận email và cho phép đăng nhập hệ thống.</p>}
           {/* Search & Filter Bar */}
           <div className="flex flex-col sm:flex-row items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
             <div className="relative flex-1 w-full">
@@ -513,7 +557,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               />
             </div>
 
-            <label className="text-xs text-slate-600">
+            {activeAdminTab !== "pending" && <label className="text-xs text-slate-600">
               Trạng thái
               <select
                 aria-label="Lọc trạng thái tài khoản"
@@ -526,7 +570,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <option value="locked">Đã vô hiệu hóa</option>
                 <option value="pending">Chờ duyệt</option>
               </select>
-            </label>
+            </label>}
             <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
               {(
                 ["all", "student", "parent", "psychologist", "admin"] as const
@@ -567,13 +611,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {filteredUsers.length === 0 ? (
+                {usersLoading || usersError ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-slate-500">{usersLoading ? "Đang tải tài khoản..." : "Chưa tải được danh sách tài khoản."}</td></tr>
+                ) : filteredUsers.length === 0 ? (
                   <tr>
                     <td
                       colSpan={5}
                       className="p-8 text-center text-slate-400 italic"
                     >
-                      Không tìm thấy người dùng phù hợp với tiêu chí lọc.
+                      {activeAdminTab === "pending" && !userSearchTerm && userRoleFilter === "all" ? "Không có tài khoản nào đang chờ duyệt." : "Không tìm thấy người dùng phù hợp với tiêu chí lọc."}
                     </td>
                   </tr>
                 ) : (
@@ -649,6 +695,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
                               <Lock className="w-3 h-3 text-rose-600" /> Bị khóa
                             </span>
+                          ) : u.status === "pending" ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800"><Clock3 className="h-3 w-3" /> Chờ duyệt</span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />{" "}
@@ -698,7 +746,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                   ? "text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 hover:border-emerald-200"
                                   : "text-amber-600 hover:text-amber-800 hover:bg-amber-50 hover:border-amber-200"
                               }`}
-                              disabled={u.id === currentUser.id}
+                              disabled={u.id === currentUser.id || statusBusyId !== null || usersLoading}
+                              aria-label={u.status === "pending" ? `Duyệt tài khoản ${u.email}` : undefined}
                               title={
                                 u.status === "pending"
                                   ? "Duyệt và kích hoạt tài khoản"
@@ -707,7 +756,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                     : "Disable: khóa tài khoản"
                               }
                             >
-                              {isLocked ? (
+                              {u.status === "pending" ? (
+                                <span className="inline-flex items-center gap-1.5 px-2 font-bold text-emerald-700"><UserCheck className="h-4 w-4" />{statusBusyId === u.id ? "Đang duyệt..." : "Duyệt tài khoản"}</span>
+                              ) : isLocked ? (
                                 <Unlock className="w-4 h-4" />
                               ) : (
                                 <Lock className="w-4 h-4" />
