@@ -7,14 +7,14 @@ type GenerationParams = {
   config?: { systemInstruction?: string; temperature?: number; responseMimeType?: string };
 };
 
-function getGeminiClient() {
+function getGeminiClient(requestToken?: string) {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (apiKey) {
     const client = new GoogleGenAI({ apiKey, httpOptions: { timeout: 45000 } });
     return { generate: async (params: GenerationParams) => client.models.generateContent(params) };
   }
   // Resolve per request: Vercel rotates OIDC credentials automatically.
-  const token = process.env.AI_GATEWAY_API_KEY?.trim() || process.env.VERCEL_OIDC_TOKEN;
+  const token = process.env.AI_GATEWAY_API_KEY?.trim() || requestToken || process.env.VERCEL_OIDC_TOKEN;
   if (!token) return null;
   return {
     async generate(params: GenerationParams): Promise<{ text: string }> {
@@ -47,9 +47,9 @@ function getGeminiClient() {
 
 export function registerAiRoutes(app: Express) {
   // Reports configuration only; never exposes credentials or claims provider readiness.
-  app.get("/api/ai/status", (_req, res) => {
+  app.get("/api/ai/status", (req, res) => {
     res.json({
-      configured: Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.AI_GATEWAY_API_KEY?.trim() || process.env.VERCEL_OIDC_TOKEN),
+      configured: Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.AI_GATEWAY_API_KEY?.trim() || process.env.VERCEL_OIDC_TOKEN || (process.env.VERCEL && req.get("x-vercel-oidc-token"))),
       provider: process.env.GEMINI_API_KEY?.trim() ? 'gemini' : 'vercel-ai-gateway',
     });
   });
@@ -61,7 +61,7 @@ export function registerAiRoutes(app: Express) {
       if (typeof message !== "string" || !message.trim() || message.length > 10000 || !["student", "parent"].includes(role)) {
         return res.status(400).json({ error: "Vui lòng nhập tin nhắn hợp lệ (tối đa 10.000 ký tự)." });
       }
-      const ai = getGeminiClient();
+      const ai = getGeminiClient(process.env.VERCEL ? req.get("x-vercel-oidc-token") : undefined);
 
       if (!ai) {
         return res.status(503).json({ code: "AI_NOT_CONFIGURED", error: "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ quản trị viên để kích hoạt." });
@@ -112,7 +112,7 @@ Hãy đưa ra câu trả lời thấu cảm, thực tế và mang lại lời kh
   app.post("/api/ai/parent-coach", async (req, res) => {
     try {
       const { emotion, intensity, reason, wishToUnderstand, studentName } = req.body;
-      const ai = getGeminiClient();
+      const ai = getGeminiClient(process.env.VERCEL ? req.get("x-vercel-oidc-token") : undefined);
 
       if (!ai) {
         return res.status(503).json({ code: "AI_NOT_CONFIGURED", error: "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ quản trị viên để kích hoạt." });
@@ -155,7 +155,7 @@ Hãy đóng vai trò chuyên gia tâm lý gia đình CODE GenZ Family và đưa 
   app.post("/api/ai/icebreakers", async (req, res) => {
     try {
       const { topic, difficulty } = req.body;
-      const ai = getGeminiClient();
+      const ai = getGeminiClient(process.env.VERCEL ? req.get("x-vercel-oidc-token") : undefined);
 
       if (!ai) {
         return res.status(503).json({ code: "AI_NOT_CONFIGURED", error: "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ quản trị viên để kích hoạt." });
