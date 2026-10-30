@@ -11,7 +11,7 @@ function getGeminiClient(requestToken?: string) {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (apiKey) {
     const client = new GoogleGenAI({ apiKey, httpOptions: { timeout: 45000 } });
-    return { generate: async (params: GenerationParams) => client.models.generateContent(params) };
+    return { generate: async (params: GenerationParams) => client.models.generateContent({ ...params, config: { maxOutputTokens: 1800, ...params.config } }) };
   }
   // Resolve per request: Vercel rotates OIDC credentials automatically.
   const token = process.env.AI_GATEWAY_API_KEY?.trim() || requestToken || process.env.VERCEL_OIDC_TOKEN;
@@ -91,7 +91,7 @@ Tin nhắn từ người dùng (${role === "parent" ? "Cha Mẹ" : "Học sinh"}
 Hãy đưa ra câu trả lời thấu cảm, thực tế và mang lại lời khuyên hoặc gợi ý câu nói trực tiếp để người dùng có thể áp dụng ngay.`;
 
       const response = await ai.generate({
-        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.7-flash",
+        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite",
         contents: prompt,
         config: {
           systemInstruction,
@@ -109,7 +109,9 @@ Hãy đưa ra câu trả lời thấu cảm, thực tế và mang lại lời kh
       const message = providerStatus === 402
         ? 'Dịch vụ AI chưa có credit hoặc đã hết ngân sách. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
         : providerStatus === 401 || providerStatus === 403
-        ? 'Dịch vụ AI cần xác minh hoặc cấp quyền tài khoản. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
+        ? 'Dịch vụ AI chưa được cấp quyền truy cập. Quản trị viên cần kiểm tra khóa và quyền của nhà cung cấp AI.'
+        : providerStatus === 504 || error?.name === 'TimeoutError' || error?.name === 'AbortError'
+        ? 'AI mất quá nhiều thời gian phản hồi. Vui lòng gửi lại câu hỏi ngắn hơn hoặc thử lại sau.'
         : providerStatus === 429
         ? 'Dịch vụ AI đang đạt giới hạn sử dụng. Vui lòng thử lại sau ít phút.'
         : 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên.';
@@ -144,7 +146,7 @@ Hãy đóng vai trò chuyên gia tâm lý gia đình CODE GenZ Family và đưa 
 `;
 
       const response = await ai.generate({
-        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.7-flash",
+        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite",
         contents: prompt,
         config: {
           systemInstruction: "Bạn là chuyên gia tư vấn tâm lý học hành vi gia đình Việt Nam. Luôn xuất ra JSON hợp lệ.",
@@ -161,7 +163,9 @@ Hãy đóng vai trò chuyên gia tâm lý gia đình CODE GenZ Family và đưa 
       const message = providerStatus === 402
         ? 'Dịch vụ AI chưa có credit hoặc đã hết ngân sách. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
         : providerStatus === 401 || providerStatus === 403
-        ? 'Dịch vụ AI cần xác minh hoặc cấp quyền tài khoản. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
+        ? 'Dịch vụ AI chưa được cấp quyền truy cập. Quản trị viên cần kiểm tra khóa và quyền của nhà cung cấp AI.'
+        : providerStatus === 504 || error?.name === 'TimeoutError' || error?.name === 'AbortError'
+        ? 'AI mất quá nhiều thời gian phản hồi. Vui lòng gửi lại câu hỏi ngắn hơn hoặc thử lại sau.'
         : providerStatus === 429
         ? 'Dịch vụ AI đang đạt giới hạn sử dụng. Vui lòng thử lại sau ít phút.'
         : 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên.';
@@ -185,7 +189,7 @@ Hãy tạo 3 câu mở đầu (icebreakers) tự nhiên, chân thành, giúp ph�
 Trả về JSON định dạng: { "icebreakers": ["câu 1", "câu 2", "câu 3"] }`;
 
       const response = await ai.generate({
-        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.7-flash",
+        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -201,7 +205,9 @@ Trả về JSON định dạng: { "icebreakers": ["câu 1", "câu 2", "câu 3"] 
       const message = providerStatus === 402
         ? 'Dịch vụ AI chưa có credit hoặc đã hết ngân sách. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
         : providerStatus === 401 || providerStatus === 403
-        ? 'Dịch vụ AI cần xác minh hoặc cấp quyền tài khoản. Quản trị viên cần kiểm tra AI Gateway trên Vercel.'
+        ? 'Dịch vụ AI chưa được cấp quyền truy cập. Quản trị viên cần kiểm tra khóa và quyền của nhà cung cấp AI.'
+        : providerStatus === 504 || error?.name === 'TimeoutError' || error?.name === 'AbortError'
+        ? 'AI mất quá nhiều thời gian phản hồi. Vui lòng gửi lại câu hỏi ngắn hơn hoặc thử lại sau.'
         : providerStatus === 429
         ? 'Dịch vụ AI đang đạt giới hạn sử dụng. Vui lòng thử lại sau ít phút.'
         : 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ quản trị viên.';
