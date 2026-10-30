@@ -1,3 +1,5 @@
+import { formatAiText } from './aiText';
+
 export interface AIChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -30,7 +32,7 @@ export const aiService = {
     if (typeof data?.reply !== 'string' || !data.reply.trim()) {
       throw new Error('Trợ lý AI chưa trả lời. Vui lòng thử lại.');
     }
-    return data.reply;
+    return formatAiText(data.reply);
   },
 
   async getParentCoaching(params: {
