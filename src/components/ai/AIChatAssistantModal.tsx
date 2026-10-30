@@ -13,6 +13,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { CodeGenzMascot } from '../Logo';
+import { formatAiText } from '../../services/aiText';
 
 interface AIChatAssistantModalProps {
   isOpen: boolean;
@@ -157,7 +158,7 @@ export const AIChatAssistantModal: React.FC<AIChatAssistantModalProps> = ({
                       : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md rounded-tr-xs'
                   }`}
                 >
-                  {msg.content}
+                  {isAI ? formatAiText(msg.content) : msg.content}
                 </div>
               </div>
             );
