@@ -50,16 +50,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.isRead && n.userId === currentUser.id).length;
   const userNotifs = notifications.filter((n) => n.userId === currentUser.id);
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(family.familyCode);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
-  };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -127,11 +121,11 @@ export const Header: React.FC<HeaderProps> = ({
                   <strong className="font-mono text-indigo-700 font-bold">{family.familyCode}</strong>
                 </button>
                 <button
-                  onClick={handleCopyCode}
+                  onClick={() => onOpenFamilyManagement('invite')}
                   className="text-indigo-600 hover:text-indigo-900 p-0.5 rounded ml-0.5 transition-colors cursor-pointer"
-                  title="Sao chép mã gia đình để mời thành viên"
+                  title="Chia sẻ website và mã QR mời gia đình" aria-label="Chia sẻ website và mã QR mời gia đình"
                 >
-                  {copiedCode ? <CheckCheck className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5" />}
+                  <Share2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

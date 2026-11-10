@@ -17,7 +17,6 @@ import {
   Phone,
   UserMinus,
   PlusCircle,
-  QrCode,
   ArrowRight,
   CheckCircle2,
   AlertCircle,
@@ -28,6 +27,7 @@ import {
   X,
 } from 'lucide-react';
 import { CodeGenzLogo, CodeGenzMascot } from '../Logo';
+import { SiteShareCard } from '../shared/SiteShareCard';
 
 interface FamilyManagementModalProps {
   isOpen: boolean;
@@ -600,7 +600,7 @@ export const FamilyManagementModal: React.FC<FamilyManagementModalProps> = ({
                       Mã gia đình bảo mật
                     </div>
                     <h3 className="text-xl font-black text-white">
-                      Mời con cái hoặc cha mẹ tham gia qua Mã kết nối
+                      Mời con cái hoặc cha mẹ tham gia qua QR Code
                     </h3>
                     <p className="text-xs text-indigo-200 leading-relaxed">
                       Chia sẻ mã kết nối dưới đây cho con hoặc bố mẹ của bạn. Khi đăng nhập vào CODE GenZ, thành viên chỉ cần nhập mã này tại mục "Nhập mã kết nối" để tự động liên kết vào tổ ấm chung.
@@ -623,13 +623,7 @@ export const FamilyManagementModal: React.FC<FamilyManagementModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 text-center space-y-2">
-                    <div className="w-24 h-24 mx-auto bg-white rounded-xl p-2 flex items-center justify-center shadow-inner">
-                      <QrCode className="w-20 h-20 text-indigo-950" />
-                    </div>
-                    <div className="text-[11px] font-bold text-indigo-200">Quét mã QR kết nối nhanh</div>
-                    <div className="text-[10px] text-indigo-300">Áp dụng cho ứng dụng di động & tablet</div>
-                  </div>
+                  <SiteShareCard familyCode={family.familyCode} />
                 </div>
               </div>
 
