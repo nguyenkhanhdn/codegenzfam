@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { FamilyRole, User } from '../../types';
 import {
@@ -32,6 +32,8 @@ import { SiteShareCard } from '../shared/SiteShareCard';
 interface FamilyManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialJoinCode?: string;
+  onJoinComplete?: () => void;
   initialTab?: 'overview' | 'invite' | 'invitations' | 'all_families';
 }
 
@@ -39,6 +41,8 @@ export const FamilyManagementModal: React.FC<FamilyManagementModalProps> = ({
   isOpen,
   onClose,
   initialTab = 'overview',
+  initialJoinCode = '',
+  onJoinComplete,
 }) => {
   const {
     currentUser,
@@ -89,6 +93,19 @@ export const FamilyManagementModal: React.FC<FamilyManagementModalProps> = ({
   const [selectedRoleToLink, setSelectedRoleToLink] = useState<FamilyRole>('student');
   const [linkLoading, setLinkLoading] = useState(false);
 
+  const joinSectionRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isOpen) { setActiveTab(initialTab); setJoinMessage(null); }
+  }, [isOpen, initialTab]);
+  useEffect(() => {
+    if (isOpen && initialJoinCode) setJoinCodeInput(initialJoinCode);
+  }, [isOpen, initialJoinCode]);
+  useEffect(() => {
+    if (!isOpen || !initialJoinCode || activeTab !== 'invite') return;
+    joinSectionRef.current?.scrollIntoView({ block: 'center' });
+    joinSectionRef.current?.querySelector('input')?.focus({ preventScroll: true });
+  }, [isOpen, initialJoinCode, activeTab]);
+
   if (!isOpen) return null;
 
   const currentMembers = getFamilyMembers(family.id);
@@ -110,6 +127,7 @@ export const FamilyManagementModal: React.FC<FamilyManagementModalProps> = ({
     const result = await joinFamilyWithCode(joinCodeInput.trim());
     setJoinLoading(false);
     if (result.success) {
+      onJoinComplete?.();
       setJoinMessage({ type: 'success', text: result.message });
       setJoinCodeInput('');
       setTimeout(() => {
@@ -706,7 +724,7 @@ export const FamilyManagementModal: React.FC<FamilyManagementModalProps> = ({
               </div>
 
               {/* Option C: Join another family by code */}
-              <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+              <div ref={joinSectionRef} className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
                 <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                     <HeartHandshake className="w-5 h-5" />

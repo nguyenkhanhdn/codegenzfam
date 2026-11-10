@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import { Header } from "./components/Header";
 import { RoleBanner } from "./components/RoleBanner";
@@ -29,6 +29,8 @@ import {
   Users,
 } from "lucide-react";
 
+import { readPendingFamilyInvite, clearPendingFamilyInvite } from "./services/familyInviteLink";
+
 const MainApp: React.FC = () => {
   const {
     currentUser,
@@ -58,6 +60,27 @@ const MainApp: React.FC = () => {
   const [familyModalInitialTab, setFamilyModalInitialTab] = useState<
     "overview" | "invite" | "invitations" | "all_families"
   >("overview");
+
+  const [pendingFamilyCode, setPendingFamilyCode] = useState(readPendingFamilyInvite);
+  const openedInvite = useRef(false);
+  const promptedInviteLogin = useRef(false);
+  const dismissInvite = () => {
+    clearPendingFamilyInvite();
+    setPendingFamilyCode('');
+  };
+  useEffect(() => {
+    if (pendingFamilyCode && authReady && !isAuthenticated && !promptedInviteLogin.current) {
+      promptedInviteLogin.current = true;
+      openAuthModal('login');
+    }
+  }, [pendingFamilyCode, authReady, isAuthenticated, openAuthModal]);
+  useEffect(() => {
+    if (!pendingFamilyCode || !authReady || !isAuthenticated || mustChangePassword || currentUser.status !== 'active' || openedInvite.current) return;
+    if (currentUser.role !== 'student' && currentUser.role !== 'parent') return;
+    openedInvite.current = true;
+    setFamilyModalInitialTab('invite');
+    setIsFamilyManagementOpen(true);
+  }, [pendingFamilyCode, authReady, isAuthenticated, mustChangePassword, currentUser.status, currentUser.role]);
 
   const handleOpenFamilyManagement = (
     tab: "overview" | "invite" | "invitations" | "all_families" = "overview",
@@ -92,7 +115,7 @@ const MainApp: React.FC = () => {
         <div className="min-h-screen bg-indigo-50 flex items-center justify-center p-6">
           <div className="max-w-md bg-white rounded-3xl p-8 text-center space-y-5">
             <CodeGenzLogo size="lg" showTagline />
-            <p>Đăng nhập để sử dụng CODE GenZ Family.</p>
+            <p>{pendingFamilyCode ? `Bạn được mời kết nối gia đình ${pendingFamilyCode}. Đăng nhập hoặc đăng ký để tiếp tục.` : 'Đăng nhập để sử dụng CODE GenZ Family.'}</p>
             {authError && (
               <p role="alert" className="text-rose-700 text-sm">
                 {authError}
@@ -408,7 +431,9 @@ const MainApp: React.FC = () => {
 
       <FamilyManagementModal
         isOpen={isFamilyManagementOpen}
-        onClose={() => setIsFamilyManagementOpen(false)}
+        onClose={() => { setIsFamilyManagementOpen(false); dismissInvite(); }}
+        initialJoinCode={pendingFamilyCode}
+        onJoinComplete={dismissInvite}
         initialTab={familyModalInitialTab}
       />
 
