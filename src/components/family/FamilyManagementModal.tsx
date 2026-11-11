@@ -101,7 +101,7 @@ export const FamilyManagementModal: React.FC<FamilyManagementModalProps> = ({
     if (isOpen && initialJoinCode) setJoinCodeInput(initialJoinCode);
   }, [isOpen, initialJoinCode]);
   useEffect(() => {
-    if (!isOpen || !initialJoinCode || activeTab !== 'invite') return;
+    if (!isOpen || !initialJoinCode) return;
     joinSectionRef.current?.scrollIntoView({ block: 'center' });
     joinSectionRef.current?.querySelector('input')?.focus({ preventScroll: true });
   }, [isOpen, initialJoinCode, activeTab]);
@@ -295,6 +295,59 @@ export const FamilyManagementModal: React.FC<FamilyManagementModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6 bg-slate-50/50">
+              {/* Option C: Join another family by code */}
+              <div ref={joinSectionRef} className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <HeartHandshake className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-800">
+                      Kết nối tài khoản học sinh với cha mẹ bằng mã
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Nhập mã gia đình (VD: CODE-8899, CODE-5566) để tham gia nhóm tổ ấm của bạn
+                    </p>
+                  </div>
+                </div>
+
+                {joinMessage && (
+                  <div
+                    className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                      joinMessage.type === 'success'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        : 'bg-rose-50 text-rose-800 border border-rose-200'
+                    }`}
+                  >
+                    {joinMessage.type === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-rose-600" />
+                    )}
+                    {joinMessage.text}
+                  </div>
+                )}
+
+                <form onSubmit={handleJoinWithCode} className="flex flex-wrap items-center gap-3">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nhập mã (VD: CODE-8899)"
+                    aria-label="Mã kết nối gia đình"
+                    maxLength={64}
+                    value={joinCodeInput}
+                    onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
+                    className="flex-1 min-w-[200px] font-mono text-sm uppercase px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={joinLoading || !joinCodeInput.trim()}
+                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer active:scale-95"
+                  >
+                    {joinLoading ? 'Đang kết nối...' : 'Xác nhận tham gia'}
+                  </button>
+                </form>
+              </div>
           {/* TAB 1: OVERVIEW & MEMBERS */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
@@ -723,57 +776,7 @@ export const FamilyManagementModal: React.FC<FamilyManagementModalProps> = ({
                 </form>
               </div>
 
-              {/* Option C: Join another family by code */}
-              <div ref={joinSectionRef} className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
-                <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <HeartHandshake className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black text-slate-800">
-                      Bạn có mã kết nối từ người thân? Nhập mã để tham gia
-                    </h4>
-                    <p className="text-xs text-slate-400">
-                      Nhập mã gia đình (VD: CODE-8899, CODE-5566) để tham gia nhóm tổ ấm của bạn
-                    </p>
-                  </div>
-                </div>
 
-                {joinMessage && (
-                  <div
-                    className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
-                      joinMessage.type === 'success'
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : 'bg-rose-50 text-rose-800 border border-rose-200'
-                    }`}
-                  >
-                    {joinMessage.type === 'success' ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-rose-600" />
-                    )}
-                    {joinMessage.text}
-                  </div>
-                )}
-
-                <form onSubmit={handleJoinWithCode} className="flex flex-wrap items-center gap-3">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nhập mã (VD: CODE-8899)"
-                    value={joinCodeInput}
-                    onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
-                    className="flex-1 min-w-[200px] font-mono text-sm uppercase px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={joinLoading || !joinCodeInput.trim()}
-                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer active:scale-95"
-                  >
-                    {joinLoading ? 'Đang kết nối...' : 'Xác nhận tham gia'}
-                  </button>
-                </form>
-              </div>
             </div>
           )}
 

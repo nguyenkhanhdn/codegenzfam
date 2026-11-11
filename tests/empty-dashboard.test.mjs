@@ -36,3 +36,24 @@ for(const [role,Component] of [['student',student.module.StudentDashboard],['par
   assert.match(renderToStaticMarkup(React.createElement(Component)),/Synthetic challenge/);
  });
 }
+
+test('family widget exposes code entry and creation when the account has no family',()=>{
+ fixture('student');
+ const html=renderToStaticMarkup(React.createElement(family.module.FamilyGroupWidget,{onOpenFamilyModal(){}}));
+ assert.match(html,/Mã kết nối học sinh – cha mẹ/);
+ assert.match(html,/Nhập mã kết nối của con hoặc cha mẹ/);
+ assert.match(html,/Tạo tổ ấm &amp; lấy mã kết nối/);
+ assert.match(html,/Kết nối tài khoản/);
+ assert.match(html,/Chưa có mã kết nối/);
+});
+test('family widget exposes the real family code and entry form for both roles',()=>{
+ for(const role of ['student','parent']){
+  fixture(role);
+  globalThis.__dashboardFixture.family={...globalThis.__dashboardFixture.family,id:'synthetic-family',familyCode:'CODE-TEST1234'};
+  const html=renderToStaticMarkup(React.createElement(family.module.FamilyGroupWidget,{onOpenFamilyModal(){}}));
+  assert.match(html,/CODE-TEST1234/);
+  assert.match(html,/Sao chép mã/);
+  assert.match(html,/Nhập mã kết nối của con hoặc cha mẹ/);
+  assert.ok(!html.includes('Tạo tổ ấm &amp; lấy mã kết nối'));
+ }
+});
