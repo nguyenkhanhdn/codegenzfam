@@ -19,8 +19,32 @@ interface FamilyGroupWidgetProps {
 }
 
 export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFamilyModal }) => {
-  const { currentUser, family, getFamilyMembers, isAuthenticated } = useApp();
+  const { currentUser, family, getFamilyMembers, isAuthenticated, joinFamilyWithCode, createFamily } = useApp();
   const [copied, setCopied] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ success: boolean; text: string } | null>(null);
+  const hasCode = Boolean(family.id && family.familyCode?.trim());
+  const connect = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!joinCode.trim() || busy) return;
+    setBusy(true); setMessage(null);
+    try {
+      const result = await joinFamilyWithCode(joinCode.trim().toUpperCase());
+      setMessage({ success: result.success, text: result.message });
+      if (result.success) setJoinCode('');
+    } catch { setMessage({ success: false, text: 'Chưa thể kết nối gia đình. Vui lòng thử lại.' }); }
+    finally { setBusy(false); }
+  };
+  const create = async () => {
+    if (busy) return;
+    setBusy(true); setMessage(null);
+    try {
+      const result = await createFamily(`Tổ ấm của ${currentUser.name}`, '🏡');
+      setMessage({ success: result.success, text: result.success ? 'Đã tạo tổ ấm. Hãy gửi mã kết nối cho con hoặc cha mẹ.' : result.message });
+    } catch { setMessage({ success: false, text: 'Chưa thể tạo tổ ấm. Vui lòng thử lại.' }); }
+    finally { setBusy(false); }
+  };
 
   if (!isAuthenticated) {
     return null;
@@ -28,11 +52,14 @@ export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFami
 
   const members = getFamilyMembers(family.id);
 
-  const handleCopy = (e: React.MouseEvent) => {
+  const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(family.familyCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (!hasCode) return;
+    try {
+      await navigator.clipboard.writeText(family.familyCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { setMessage({ success: false, text: 'Chưa sao chép được. Hãy chọn mã kết nối hiển thị bên dưới để sao chép.' }); }
   };
 
   return (
@@ -49,7 +76,7 @@ export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFami
                 Nhóm Gia Đình C-O-D-E
               </span>
               <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                {family.familyCode}
+                {hasCode ? family.familyCode : 'Chưa có mã kết nối'}
               </span>
             </div>
             <h3 className="text-base font-black text-slate-800 mt-0.5">{family.name}</h3>
@@ -59,6 +86,7 @@ export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFami
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
+            disabled={!hasCode}
             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
             title="Sao chép mã gia đình để chia sẻ"
           >
@@ -74,6 +102,33 @@ export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFami
           </button>
         </div>
       </div>
+
+      <section aria-label="Kết nối học sinh với cha mẹ" className="my-4 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 space-y-3">
+        <h4 className="text-sm font-extrabold text-indigo-950">Mã kết nối học sinh – cha mẹ</h4>
+        {hasCode ? (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-600">Gửi mã này cho con hoặc cha mẹ. Người nhận đăng nhập tài khoản của mình rồi nhập mã bên dưới để vào cùng tổ ấm.</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <strong className="select-all break-all rounded-xl border border-indigo-200 bg-white px-4 py-2 font-mono text-xl tracking-wider text-indigo-800">{family.familyCode}</strong>
+              <button type="button" onClick={handleCopy} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white">{copied ? 'Đã sao chép' : 'Sao chép mã'}</button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-600">Bạn chưa có tổ ấm và mã kết nối. Tạo tổ ấm để nhận mã, hoặc nhập mã mà con/cha mẹ đã gửi.</p>
+            <button type="button" disabled={busy} onClick={create} className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{busy ? 'Đang xử lý...' : 'Tạo tổ ấm & lấy mã kết nối'}</button>
+          </div>
+        )}
+        <form onSubmit={connect} className="space-y-2 border-t border-indigo-200 pt-3">
+          <label htmlFor="dashboard-family-code" className="block text-xs font-bold text-indigo-950">Nhập mã kết nối của con hoặc cha mẹ</label>
+          <div className="flex flex-wrap gap-2">
+            <input id="dashboard-family-code" required maxLength={64} autoComplete="off" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="VD: CODE-12345678" className="min-w-0 flex-1 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm font-mono uppercase text-slate-900" />
+            <button type="submit" disabled={busy || !joinCode.trim()} className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{busy ? 'Đang xử lý...' : 'Kết nối tài khoản'}</button>
+          </div>
+          {hasCode && <p className="text-xs text-slate-500">Nhập mã của tổ ấm khác sẽ chuyển tài khoản của bạn sang tổ ấm đó.</p>}
+        </form>
+        {message && <p role={message.success ? 'status' : 'alert'} className={`text-xs ${message.success ? 'text-emerald-700' : 'text-rose-700'}`}>{message.text}</p>}
+      </section>
 
       {/* Member Roster: Students & Parents Connected */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4">
