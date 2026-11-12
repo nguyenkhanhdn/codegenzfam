@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
+import { buildFamilyInviteUrl } from '../../services/familyInviteLink';
 import { useApp } from '../../context/AppContext';
 import {
   Users,
@@ -24,7 +26,16 @@ export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFami
   const [joinCode, setJoinCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ success: boolean; text: string } | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   const hasCode = Boolean(family.id && family.familyCode?.trim());
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!hasCode) { setQrCodeUrl(''); return; }
+    QRCode.toDataURL(buildFamilyInviteUrl(family.familyCode), { width: 240, margin: 2, errorCorrectionLevel: 'H', color: { dark: '#1e1b4b', light: '#ffffff' } })
+      .then(url => { if (!cancelled) setQrCodeUrl(url); }).catch(() => { if (!cancelled) setQrCodeUrl(''); });
+    return () => { cancelled = true; };
+  }, [hasCode, family.familyCode]);
   const connect = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!joinCode.trim() || busy) return;
@@ -51,6 +62,18 @@ export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFami
   }
 
   const members = getFamilyMembers(family.id);
+
+  const handleShare = async () => {
+    if (!hasCode) return;
+    const url = buildFamilyInviteUrl(family.familyCode);
+    const shareData = { title: 'Mời kết nối gia đình CODE', text: `Mã gia đình của ${currentUser.name}: ${family.familyCode}. Mở liên kết để tham gia gia đình.`, url };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else { await navigator.clipboard.writeText(`${shareData.text} ${url}`); setMessage({ success: true, text: 'Đã sao chép lời mời và liên kết tham gia.' }); }
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') setMessage({ success: false, text: 'Chưa thể chia sẻ. Vui lòng sao chép mã gia đình.' });
+    }
+  };
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -117,6 +140,21 @@ export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFami
           <div className="space-y-2">
             <p className="text-xs text-slate-600">Bạn chưa có tổ ấm và mã kết nối. Tạo tổ ấm để nhận mã, hoặc nhập mã mà con/cha mẹ đã gửi.</p>
             <button type="button" disabled={busy} onClick={create} className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{busy ? 'Đang xử lý...' : 'Tạo tổ ấm & lấy mã kết nối'}</button>
+          </div>
+        )}
+        {hasCode && (
+          <div className="flex flex-col sm:flex-row items-center gap-4 rounded-2xl border border-indigo-200 bg-white p-4">
+            <div className="shrink-0 rounded-xl border border-slate-100 bg-white p-2" aria-label="Mã QR kết nối gia đình">
+              {qrCodeUrl ? <img src={qrCodeUrl} alt={`QR tham gia gia đình ${family.name}`} className="h-36 w-36" /> : <div className="flex h-36 w-36 items-center justify-center text-xs text-slate-400">Đang tạo mã QR...</div>}
+            </div>
+            <div className="min-w-0 flex-1 space-y-2 text-center sm:text-left">
+              <h5 className="text-sm font-extrabold text-indigo-950">Quét QR để cha mẹ tham gia</h5>
+              <p className="text-xs leading-relaxed text-slate-600">Học sinh có thể gửi mã hoặc hình QR này cho cha mẹ. Khi quét, cha mẹ sẽ mở trang CODE với mã gia đình được điền sẵn và đăng nhập để xác nhận tham gia.</p>
+              <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
+                <button type="button" onClick={handleShare} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white"><Share2 className="mr-1 inline h-3.5 w-3.5" />Chia sẻ lời mời</button>
+                {qrCodeUrl && <a href={qrCodeUrl} download={`ma-gia-dinh-${family.familyCode}.png`} className="rounded-xl border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700">Tải QR Code</a>}
+              </div>
+            </div>
           </div>
         )}
         <form onSubmit={connect} className="space-y-2 border-t border-indigo-200 pt-3">
