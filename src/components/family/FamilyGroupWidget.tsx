@@ -27,6 +27,8 @@ export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFami
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ success: boolean; text: string } | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const hasCode = Boolean(family.id && family.familyCode?.trim());
+
   useEffect(() => {
     let cancelled = false;
     if (!hasCode) { setQrCodeUrl(''); return; }
@@ -34,7 +36,6 @@ export const FamilyGroupWidget: React.FC<FamilyGroupWidgetProps> = ({ onOpenFami
       .then(url => { if (!cancelled) setQrCodeUrl(url); }).catch(() => { if (!cancelled) setQrCodeUrl(''); });
     return () => { cancelled = true; };
   }, [hasCode, family.familyCode]);
-  const hasCode = Boolean(family.id && family.familyCode?.trim());
   const connect = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!joinCode.trim() || busy) return;
